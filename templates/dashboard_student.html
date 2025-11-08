@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Student Dashboard</h2>
+<p>Welcome, {{ user.name }}</p>
+
+<h3>Your Enrolled Classes</h3>
+{% if classes %}
+  <ul>
+    {% for c in classes %}
+      <li>{{ c }}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>You have not joined any classes yet.</p>
+{% endif %}
+
+<h3>Join a Class (by code)</h3>
+<form method="post" action="{{ url_for('dashboard') }}">
+  <label>Class Code</label><br>
+  <input name="class_code" required><br><br>
+  <button type="submit">Join Class</button>
+</form>
+{% endblock %}

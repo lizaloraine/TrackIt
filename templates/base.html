@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>TrackIt</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    nav { margin-bottom: 20px; }
+    .flash { padding: 8px; border: 1px solid #ccc; margin-bottom: 10px; }
+    .success { background:#e6ffed; }
+    .danger { background:#ffe6e6; }
+    .warning { background:#fff4e6; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/">Home</a> |
+    {% if session.user %}
+      <strong>{{ session.user.name }}</strong> ({{ session.user.role }}) |
+      <a href="{{ url_for('dashboard') }}">Dashboard</a> |
+      <a href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a> |
+      <a href="{{ url_for('signup_student') }}">Sign up (Student)</a> |
+      <a href="{{ url_for('signup_teacher') }}">Sign up (Teacher)</a>
+    {% endif %}
+  </nav>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</body>
+</html>
