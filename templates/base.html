@@ -3,14 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>TrackIt</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
-    nav { margin-bottom: 20px; }
-    .flash { padding: 8px; border: 1px solid #ccc; margin-bottom: 10px; }
-    .success { background:#e6ffed; }
-    .danger { background:#ffe6e6; }
-    .warning { background:#fff4e6; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
 </head>
 <body>
   <nav>
@@ -34,6 +28,8 @@
     {% endif %}
   {% endwith %}
 
-  {% block content %}{% endblock %}
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
 </body>
 </html>
