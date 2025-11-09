@@ -1,0 +1,271 @@
+/* ---------- Teacher Dashboard Styles ---------- */
+
+.teacher-dashboard {
+  background: #f7f9fc;
+  min-height: 100vh;
+  padding: 20px;
+  color: #333;
+}
+
+/* ---------- Header ---------- */
+.teacher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #004aad;
+  color: #fff;
+  padding: 15px 25px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.teacher-header h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+}
+
+.logout-btn {
+  background: #ff4d4d;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: #e63e3e;
+}
+
+/* ---------- Tabs ---------- */
+.tab-nav {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  background: #e0e0e0;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s ease;
+}
+
+.tab-btn.active {
+  background: #004aad;
+  color: #fff;
+  font-weight: bold;
+}
+
+.tab-content {
+  display: none;
+  background: #fff;
+  padding: 25px 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ---------- Classes ---------- */
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background: #004aad;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #0062e0;
+}
+
+/* ---------- Class Cards ---------- */
+.class-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.class-card {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 15px;
+  width: 180px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.class-card:hover {
+  background: #f0f6ff;
+  border-color: #004aad;
+}
+
+/* ---------- Student Attendance Section ---------- */
+.student-section {
+  margin-top: 30px;
+}
+
+.attendance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.attendance-tools input[type="date"] {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+/* ---------- Attendance Table ---------- */
+.student-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.student-table th,
+.student-table td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+}
+
+.student-table th {
+  background: #004aad;
+  color: #fff;
+  font-weight: 600;
+}
+
+.student-table tr:hover {
+  background: #f2f6ff;
+}
+
+/* ---------- Attendance Buttons ---------- */
+input[type="radio"][value="present"] {
+  accent-color: #28a745;
+}
+
+input[type="radio"][value="absent"] {
+  accent-color: #dc3545;
+}
+
+input[type="radio"][value="excused"] {
+  accent-color: #6c757d;
+}
+
+/* ---------- Modal ---------- */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 25px;
+  border-radius: 8px;
+  width: 320px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  color: #004aad;
+}
+
+.modal-content label {
+  display: block;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.modal-content input,
+.modal-content select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-top: 5px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  background: #aaa;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: #888;
+}
+
+/* ---------- Save Button ---------- */
+.btn-save {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  margin-top: 20px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-save:hover {
+  background: #1f8e3a;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .teacher-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .class-list {
+    justify-content: center;
+  }
+
+  .class-card {
+    width: 100%;
+  }
+
+  .student-table th,
+  .student-table td {
+    font-size: 13px;
+  }
+}

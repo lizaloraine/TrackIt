@@ -1,44 +1,138 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Student Dashboard</title>
-    <style>
-        .flash-danger { color: red; }
-        .flash-success { color: green; }
-    </style>
-</head>
-<body>
-    <h1>Student Dashboard</h1>
-    <p>Welcome, {{ user.name }}</p>
+{% extends "base.html" %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_student.css') }}">
 
+{% endblock %}
+
+{% block content %}
+<div class="student-dashboard">
+
+  <header class="student-header">
+    <h1>Student Dashboard</h1>
+    <div class="user-info">
+      <span>Welcome, <strong>{{ user.name }}</strong></span>
+      <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+  </header>
+
+  <!-- Join Class Section -->
+  <section class="join-class-section">
     <h2>Join a Class</h2>
     <form method="POST" action="{{ url_for('dashboard') }}">
-        <label>Class Code:</label><br>
-        <input type="text" name="class_code" required><br><br>
-        <button type="submit">Join Class</button>
+      <input type="hidden" name="action" value="join_class">
+      
+      <div class="form-group">
+        <label for="class_code">Class Code:</label>
+        <input type="text" id="class_code" name="class_code" placeholder="Enter class code" required>
+      </div>
+
+      <div class="form-group">
+        <label for="section">Section:</label>
+        <select id="section" name="section" required>
+          <option value="">-- Select Section --</option>
+          <!-- Later populated dynamically (via Flask or JS) -->
+        </select>
+      </div>
+
+      <button type="submit" class="btn-primary">Join Class</button>
     </form>
+  </section>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-            {% for category, msg in messages %}
-                <li class="flash-{{ category }}">{{ msg }}</li>
-            {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
-
-    {% if classes %}
-        <h3>Your Classes</h3>
-        <ul>
-            {% for c in classes %}
-                <li>{{ c }}</li>
-            {% endfor %}
-        </ul>
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, msg in messages %}
+          <div class="flash {{ category }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
     {% endif %}
+  {% endwith %}
 
-    <br>
-    <a href="{{ url_for('logout') }}">Logout</a>
-</body>
-</html>
+  <!-- Student Classes Summary -->
+  <section class="classes-section">
+    <h2>Your Classes</h2>
+    {% if classes %}
+      <table class="classes-table">
+        <thead>
+          <tr>
+            <th>Class Code</th>
+            <th>Subject Name</th>
+            <th>Section</th>
+            <th>Present</th>
+            <th>Absent</th>
+            <th>Excused</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in classes %}
+          <tr>
+            <td>{{ c.class_code }}</td>
+            <td>{{ c.subjectName }}</td>
+            <td>{{ c.section }}</td>
+            <td class="status-present">{{ c.present }}</td>
+            <td class="status-absent">{{ c.absent }}</td>
+            <td class="status-excused">{{ c.excused }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="no-classes">You haven’t joined any classes yet.</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const classCodeInput = document.getElementById("class_code");
+  const sectionSelect = document.getElementById("section");
+
+  let typingTimer;
+  const TYPING_DELAY = 500; // ms
+
+  function loadSectionsFor(code) {
+    if (!code) {
+      sectionSelect.innerHTML = '<option value="">-- Enter a class code first --</option>';
+      return;
+    }
+
+    sectionSelect.innerHTML = '<option value="">-- Checking class... --</option>';
+
+    fetch(`/get_sections/${code}`)
+      .then(res => res.json())
+      .then(data => {
+        sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
+        if (data.sections && data.sections.length > 0) {
+          data.sections.forEach(sec => {
+            const opt = document.createElement("option");
+            opt.value = sec;
+            opt.textContent = sec;
+            sectionSelect.appendChild(opt);
+          });
+        } else {
+          sectionSelect.innerHTML = '<option value="">No class or sections found</option>';
+        }
+      })
+      .catch(() => {
+        sectionSelect.innerHTML = '<option value="">Error loading sections</option>';
+      });
+  }
+
+  classCodeInput.addEventListener("input", () => {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+      const code = classCodeInput.value.trim().toUpperCase();
+      loadSectionsFor(code);
+    }, TYPING_DELAY);
+  });
+
+  classCodeInput.addEventListener("blur", () => {
+    const code = classCodeInput.value.trim().toUpperCase();
+    loadSectionsFor(code);
+  });
+});
+</script>
+{% endblock %}

@@ -1,210 +1,189 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Teacher Dashboard</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        header { background: #007BFF; color: white; padding: 10px; display: flex; align-items: center; }
-        header h1 { margin: 0; flex: 1; font-size: 20px; }
-        header a.logout { color: white; text-decoration: none; margin-right: 10px; }
+{% extends "base.html" %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher.css') }}">
+{% endblock %}
 
-        nav { display: flex; background: #f0f0f0; }
-        nav button { flex: 1; padding: 10px; cursor: pointer; border: none; background: #e0e0e0; }
-        nav button.active { background: #007BFF; color: white; }
+{% block content %}
+<div class="teacher-dashboard">
 
-        .tab-content { padding: 20px; }
+  <!-- Header -->
+  <header class="teacher-header">
+    <h1>Teacher Dashboard</h1>
+    <div class="user-info">
+      <span>Welcome, <strong>{{ user.name }}</strong></span>
+      <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+  </header>
 
-        /* Class list */
-        .class-list { display: flex; flex-wrap: wrap; gap: 10px; }
-        .class-card { border: 1px solid #ccc; padding: 10px; width: 150px; cursor: pointer; }
+  <!-- Tabs -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="home">Home</button>
+    <button class="tab-btn" data-tab="classes">Classes</button>
+  </nav>
 
-        /* Student table */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        table, th, td { border: 1px solid #ccc; }
-        th, td { padding: 8px; text-align: left; }
-        select { width: 100px; }
+  <!-- Home Tab -->
+  <section id="home" class="tab-content active">
+    <h2>Home</h2>
+    <p>Summary of your managed classes:</p>
+    {% if classes %}
+      <ul class="class-summary">
+        {% for c in classes %}
+          <li>{{ c }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="no-classes">You haven’t added any classes yet.</p>
+    {% endif %}
+  </section>
 
-        /* Modal */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
-                 background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 5px; width: 300px; }
-        .modal-content input { width: 100%; padding: 5px; margin: 5px 0; }
-        .modal-content button { padding: 5px 10px; margin-top: 10px; }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header>
-        <a href="{{ url_for('logout') }}" class="logout">Logout</a>
-        <h1>Welcome, {{ user.name }}</h1>
-    </header>
-
-    <!-- Tabs -->
-    <nav>
-        <button class="tab-btn active" data-tab="home">Home</button>
-        <button class="tab-btn" data-tab="classes">Classes</button>
-    </nav>
-
-    <!-- Home Tab -->
-    <div class="tab-content" id="home">
-        <h2>Home</h2>
-        <p>Summary of your classes:</p>
-        <ul>
-            {% for c in classes %}
-                <li>{{ c }}</li>
-            {% endfor %}
-        </ul>
+  <!-- Classes Tab -->
+  <section id="classes" class="tab-content">
+    <div class="tab-header">
+      <h2>Your Classes</h2>
+      <button id="addClassBtn" class="btn-primary">Add Class</button>
     </div>
 
-    <!-- Classes Tab -->
-    <div class="tab-content" id="classes" style="display:none;">
-        <h2>Classes</h2>
-        <button id="joinClassBtn" style="float:right;">Join New Class</button>
-
-        <!-- Class List -->
-        <div class="class-list" id="classList">
-            {% for c in classes %}
-                <div class="class-card" data-class="{{ c }}">{{ c }}</div>
-            {% endfor %}
-        </div>
-
-        <!-- Student List Table (hidden by default) -->
-        <div id="studentSection" style="margin-top:20px; display:none;">
-            <h3 id="selectedClassTitle"></h3>
-            <p id="currentDateTime"></p>
-            <table id="studentTable">
-                <thead>
-                    <tr>
-                        <th>Student Name</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Student rows will be added dynamically -->
-                </tbody>
-            </table>
-            <button id="saveAttendanceBtn" style="margin-top:10px;">Save Attendance</button>
-        </div>
+    <!-- Class List -->
+    <div class="class-list" id="classList">
+      {% for c in classes %}
+      <div class="class-card" data-class="{{ c }}">
+        <h3>{{ c }}</h3>
+      </div>
+      {% endfor %}
     </div>
 
-    <!-- Modal for Join Class -->
-    <div class="modal" id="joinModal">
-        <div class="modal-content">
-            <h3>Join New Class</h3>
-            <form id="joinClassForm" method="POST">
-                <label>Class Code:</label>
-                <input type="text" name="class_code" required>
-                <label>Section:</label>
-                <input type="text" name="section" required>
-                <button type="submit">Join</button>
-                <button type="button" id="closeModal">Cancel</button>
-            </form>
+    <!-- Student Attendance Section -->
+    <div id="studentSection" class="student-section" style="display:none;">
+      <div class="attendance-header">
+        <h3 id="selectedClassTitle">Class:</h3>
+        <div class="attendance-tools">
+          <label for="attendanceDate">Date:</label>
+          <input type="date" id="attendanceDate">
         </div>
+      </div>
+
+      <table id="studentTable" class="student-table">
+        <thead>
+          <tr>
+            <th>Student Name</th>
+            <th>Present</th>
+            <th>Absent</th>
+            <th>Excused</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamically filled -->
+        </tbody>
+      </table>
+
+      <button id="saveAttendanceBtn" class="btn-save">Save Attendance</button>
     </div>
+  </section>
 
-    <script>
-        // Tabs functionality
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-        tabButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                tabButtons.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                tabContents.forEach(tc => tc.style.display = 'none');
-                document.getElementById(btn.dataset.tab).style.display = 'block';
-            });
+  <!-- Add Class Modal -->
+  <div id="addClassModal" class="modal">
+    <div class="modal-content">
+      <h3>Add New Class</h3>
+      <form id="addClassForm" method="POST">
+        <label for="class_code">Class Code:</label>
+        <input type="text" id="class_code" name="class_code" required>
+
+        <label for="section">Section:</label>
+        <select id="section" name="section" required>
+          <option value="">-- Select Section --</option>
+          <!-- Dynamic dropdown -->
+        </select>
+
+        <div class="modal-buttons">
+          <button type="submit" class="btn-primary">Add</button>
+          <button type="button" id="closeModal" class="btn-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Tab switching
+const tabButtons = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+tabButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabButtons.forEach(b => b.classList.remove('active'));
+    tabContents.forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Modal
+const modal = document.getElementById('addClassModal');
+const openModalBtn = document.getElementById('addClassBtn');
+const closeModalBtn = document.getElementById('closeModal');
+
+openModalBtn.addEventListener('click', () => modal.style.display = 'flex');
+closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
+window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+
+// Attendance handling
+let currentClassCode = null;
+let currentAttendance = [];
+const studentSection = document.getElementById('studentSection');
+const studentTableBody = document.querySelector('#studentTable tbody');
+const selectedClassTitle = document.getElementById('selectedClassTitle');
+
+document.querySelectorAll('.class-card').forEach(card => {
+  card.addEventListener('click', () => {
+    currentClassCode = card.dataset.class;
+    selectedClassTitle.textContent = "Class: " + currentClassCode;
+    studentSection.style.display = 'block';
+
+    studentTableBody.innerHTML = '';
+    fetch(`/get_students/${currentClassCode}`)
+      .then(res => res.json())
+      .then(data => {
+        currentAttendance = data.students.map(s => ({
+          student_id: s.id, status: 'present'
+        }));
+
+        data.students.forEach(s => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${s.name}</td>
+            <td><input type="radio" name="status-${s.id}" value="present" checked></td>
+            <td><input type="radio" name="status-${s.id}" value="absent"></td>
+            <td><input type="radio" name="status-${s.id}" value="excused"></td>
+          `;
+          studentTableBody.appendChild(row);
         });
 
-        // Modal functionality
-        const joinBtn = document.getElementById('joinClassBtn');
-        const modal = document.getElementById('joinModal');
-        const closeModalBtn = document.getElementById('closeModal');
-
-        joinBtn.addEventListener('click', () => modal.style.display = 'flex');
-        closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
-        window.onclick = function(event) {
-            if (event.target == modal) modal.style.display = 'none';
-        };
-
-        // Display current date & time
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('currentDateTime').innerText = now.toLocaleString();
-        }
-        setInterval(updateDateTime, 1000);
-
-        // Attendance data
-        let currentAttendance = [];
-        let currentClassCode = null;
-
-        // Click class card to show student list
-        const classCards = document.querySelectorAll('.class-card');
-        const studentTableBody = document.querySelector('#studentTable tbody');
-        const selectedClassTitle = document.getElementById('selectedClassTitle');
-
-        classCards.forEach(card => {
-            card.addEventListener('click', () => {
-                const classCode = card.dataset.class;
-                currentClassCode = classCode;
-
-                // Show student section
-                document.getElementById('studentSection').style.display = 'block';
-                selectedClassTitle.innerText = "Class: " + classCode;
-
-                // Clear previous table
-                studentTableBody.innerHTML = '';
-                currentAttendance = [];
-
-                // Fetch students via AJAX
-                fetch(`/get_students/${classCode}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        data.students.forEach(s => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${s.name}</td>
-                                <td>
-                                    <select data-student-id="${s.id}">
-                                        <option value="present">Present</option>
-                                        <option value="absent">Absent</option>
-                                        <option value="excused">Excused</option>
-                                    </select>
-                                </td>
-                            `;
-                            studentTableBody.appendChild(row);
-
-                            currentAttendance.push({student_id: s.id, status: 'present'});
-                        });
-
-                        // Listen for changes
-                        studentTableBody.querySelectorAll('select').forEach(sel => {
-                            sel.addEventListener('change', () => {
-                                const sid = sel.dataset.studentId;
-                                const newStatus = sel.value;
-                                const record = currentAttendance.find(a => a.student_id === sid);
-                                if (record) record.status = newStatus;
-                            });
-                        });
-                    });
-            });
+        document.querySelectorAll('input[type=radio]').forEach(radio => {
+          radio.addEventListener('change', () => {
+            const sid = radio.name.split('-')[1];
+            const record = currentAttendance.find(a => a.student_id === sid);
+            if (record) record.status = radio.value;
+          });
         });
+      });
+  });
+});
 
-        // Save attendance button
-        document.getElementById('saveAttendanceBtn').addEventListener('click', () => {
-            if (!currentClassCode) { alert("Select a class first!"); return; }
-
-            fetch(`/save_attendance/${currentClassCode}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({attendance: currentAttendance})
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') alert('Attendance saved successfully!');
-                else alert('Error saving attendance: ' + data.message);
-            });
-        });
-    </script>
-</body>
-</html>
+// Save attendance
+document.getElementById('saveAttendanceBtn').addEventListener('click', () => {
+  if (!currentClassCode) {
+    alert('Select a class first!');
+    return;
+  }
+  fetch(`/save_attendance/${currentClassCode}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ attendance: currentAttendance })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') alert('Attendance saved!');
+    else alert('Error: ' + data.message);
+  });
+});
+</script>
+{% endblock %}
