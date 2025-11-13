@@ -93,34 +93,45 @@ document.addEventListener("DOMContentLoaded", () => {
   let typingTimer;
   const TYPING_DELAY = 500; // ms
 
-  function loadSectionsFor(code) {
+  async function loadSectionsFor(code) {
     if (!code) {
       sectionSelect.innerHTML = '<option value="">-- Enter a class code first --</option>';
       return;
     }
 
-    sectionSelect.innerHTML = '<option value="">-- Checking class... --</option>';
+    sectionSelect.innerHTML = '<option value="" disabled>-- Checking class... --</option>';
 
-    fetch(`/get_sections/${code}`)
-      .then(res => res.json())
-      .then(data => {
-        sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
-        if (data.sections && data.sections.length > 0) {
-          data.sections.forEach(sec => {
-            const opt = document.createElement("option");
-            opt.value = sec;
-            opt.textContent = sec;
-            sectionSelect.appendChild(opt);
-          });
-        } else {
-          sectionSelect.innerHTML = '<option value="">No class or sections found</option>';
+    try {
+      const res = await fetch(`/get_sections/${code}`);
+      if (!res.ok) throw new Error('Network error');
+
+      const data = await res.json();
+
+      // Clear dropdown first
+      sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
+
+      if (data.sections && data.sections.length > 0) {
+        data.sections.forEach(sec => {
+          const opt = document.createElement("option");
+          opt.value = sec;
+          opt.textContent = sec;
+          sectionSelect.appendChild(opt);
+        });
+
+        // Auto-select if section is only one
+        if (data.sections.length === 1) {
+          sectionSelect.value = data.sections[0];
         }
-      })
-      .catch(() => {
-        sectionSelect.innerHTML = '<option value="">Error loading sections</option>';
-      });
+      } else {
+        sectionSelect.innerHTML = '<option value="" disabled>No class or sections found</option>';
+      }
+    } catch (err) {
+      console.error(err);
+      sectionSelect.innerHTML = '<option value="" disabled>Error loading sections</option>';
+    }
   }
 
+  // Debounce typing
   classCodeInput.addEventListener("input", () => {
     clearTimeout(typingTimer);
     typingTimer = setTimeout(() => {
@@ -129,9 +140,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }, TYPING_DELAY);
   });
 
+  // blur
   classCodeInput.addEventListener("blur", () => {
     const code = classCodeInput.value.trim().toUpperCase();
     loadSectionsFor(code);
+  });
+
+  // Clear dropdown if user clears class code manually
+  classCodeInput.addEventListener("keydown", (e) => {
+    if (e.key === "Backspace" || e.key === "Delete") {
+      setTimeout(() => {
+        if (!classCodeInput.value.trim()) {
+          sectionSelect.innerHTML = '<option value="">-- Enter a class code first --</option>';
+        }
+      }, 10);
+    }
   });
 });
 </script>

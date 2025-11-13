@@ -85,20 +85,22 @@
     <div class="modal-content">
       <h3>Add New Class</h3>
       <form id="addClassForm" method="POST">
-        <label for="class_code">Class Code:</label>
-        <input type="text" id="class_code" name="class_code" required>
+  <input type="hidden" name="action" value="add_class">
 
-        <label for="section">Section:</label>
-        <select id="section" name="section" required>
-          <option value="">-- Select Section --</option>
-          <!-- Dynamic dropdown -->
-        </select>
+  <label for="class_code">Class Code:</label>
+  <input type="text" id="class_code" name="class_code" placeholder="e.g. CSE402" required>
 
-        <div class="modal-buttons">
-          <button type="submit" class="btn-primary">Add</button>
-          <button type="button" id="closeModal" class="btn-cancel">Cancel</button>
-        </div>
-      </form>
+  <label for="section">Section:</label>
+  <select id="section" name="section" required>
+    <option value="">-- Select Section --</option>
+    <!-- Dynamic dropdown -->
+  </select>
+
+  <div class="modal-buttons">
+    <button type="submit" class="btn-primary">Add</button>
+    <button type="button" id="closeModal" class="btn-cancel">Cancel</button>
+  </div>
+</form>
     </div>
   </div>
 </div>
@@ -185,5 +187,39 @@ document.getElementById('saveAttendanceBtn').addEventListener('click', () => {
     else alert('Error: ' + data.message);
   });
 });
+
+// Dynamic section dropdown
+const classInput = document.getElementById('class_code');
+const sectionSelect = document.getElementById('section');
+
+classInput.addEventListener('change', async () => {
+  const code = classInput.value.trim().toUpperCase();
+  sectionSelect.innerHTML = '<option value="">Loading...</option>';
+  if (!code) {
+    sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
+    return;
+  }
+
+  const resp = await fetch(`/get_sections/${code}`);
+  if (!resp.ok) {
+    sectionSelect.innerHTML = '<option value="">No sections found</option>';
+    return;
+  }
+  const data = await resp.json();
+  const sections = data.sections;
+  if (!sections.length) {
+    sectionSelect.innerHTML = '<option value="">No sections found</option>';
+    return;
+  }
+
+  sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
+  sections.forEach(sec => {
+    const opt = document.createElement('option');
+    opt.value = sec;
+    opt.textContent = sec;
+    sectionSelect.appendChild(opt);
+  });
+});
+
 </script>
 {% endblock %}
