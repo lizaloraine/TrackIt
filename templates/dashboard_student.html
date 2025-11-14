@@ -1,161 +1,108 @@
 {% extends "base.html" %}
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_student.css') }}">
-
-{% endblock %}
-
 {% block content %}
-<div class="student-dashboard">
 
-  <header class="student-header">
-    <h1>Student Dashboard</h1>
-    <div class="user-info">
-      <span>Welcome, <strong>{{ user.name }}</strong></span>
-      <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+<main class="dashboard-container">
+
+  <!-- Left Column -->
+  <section class="left-col">
+
+    <!-- Notifications -->
+    <div class="panel notifications-panel">
+      <div class="panel-header">
+        <h3>Notifications</h3>
+        <button id="mark-read">Mark all read</button>
+      </div>
+      <div id="notifications-list" class="notifications-list">
+        <div class="skeleton-item"></div>
+        <div class="skeleton-item"></div>
+      </div>
     </div>
-  </header>
 
-  <!-- Join Class Section -->
-  <section class="join-class-section">
-    <h2>Join a Class</h2>
-    <form method="POST" action="{{ url_for('dashboard') }}">
+    <!-- Search & Filters -->
+    <div class="panel filter-panel">
+      <input id="search-classes" placeholder="Search classes...">
+      <div class="filters">
+        <select id="filter-status">
+          <option value="">All</option>
+          <option value="low-attendance">Low Attendance (&lt; 60%)</option>
+          <option value="high-absent">High Absent</option>
+        </select>
+        <select id="sort-classes">
+          <option value="alpha">Sort: A–Z</option>
+          <option value="most-absent">Most Absent</option>
+          <option value="attendance-desc">Best Attendance</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Class Cards -->
+    <div id="classes-cards" class="classes-cards">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+
+  </section>
+
+  <!-- Right Column -->
+  <aside class="right-col">
+
+    <div class="panel attendance-analytics">
+      <div class="panel-header">
+        <h3>Attendance Summary</h3>
+      </div>
+
+      <canvas id="attendanceChart" width="400" height="240"></canvas>
+
+      <div class="attendance-stats" id="attendance-stats">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+
+    <div class="panel class-detail-panel" id="class-detail-panel">
+      <div class="panel-header">
+        <h3>Class Details</h3>
+      </div>
+      <div id="class-detail-content">
+        <p class="muted">Select a class card to view details (attendance calendar, topics, download report).</p>
+      </div>
+    </div>
+
+  </aside>
+
+</main>
+
+<!-- Join Class Modal -->
+<div id="join-modal" class="modal" aria-hidden="true">
+  <div class="modal-content">
+    <button class="close-modal" data-close>&times;</button>
+    <h3>Join Class</h3>
+
+    <form id="join-form" method="POST" action="{{ url_for('dashboard') }}">
       <input type="hidden" name="action" value="join_class">
-      
+
       <div class="form-group">
-        <label for="class_code">Class Code:</label>
-        <input type="text" id="class_code" name="class_code" placeholder="Enter class code" required>
+        <label for="class_code_modal">Class Code</label>
+        <input id="class_code_modal" name="class_code" required />
       </div>
 
       <div class="form-group">
-        <label for="section">Section:</label>
-        <select id="section" name="section" required>
-          <option value="">-- Select Section --</option>
-          <!-- Later populated dynamically (via Flask or JS) -->
+        <label for="section_modal">Section</label>
+        <select id="section_modal" name="section" required>
+          <option value="">-- Enter a class code first --</option>
         </select>
       </div>
 
-      <button type="submit" class="btn-primary">Join Class</button>
-    </form>
-  </section>
-
-  <!-- Flash Messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="flash-container">
-        {% for category, msg in messages %}
-          <div class="flash {{ category }}">{{ msg }}</div>
-        {% endfor %}
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" data-close>Cancel</button>
+        <button type="submit" class="btn-confirm">Confirm Join</button>
       </div>
-    {% endif %}
-  {% endwith %}
-
-  <!-- Student Classes Summary -->
-  <section class="classes-section">
-    <h2>Your Classes</h2>
-    {% if classes %}
-      <table class="classes-table">
-        <thead>
-          <tr>
-            <th>Class Code</th>
-            <th>Subject Name</th>
-            <th>Section</th>
-            <th>Present</th>
-            <th>Absent</th>
-            <th>Excused</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in classes %}
-          <tr>
-            <td>{{ c.class_code }}</td>
-            <td>{{ c.subjectName }}</td>
-            <td>{{ c.section }}</td>
-            <td class="status-present">{{ c.present }}</td>
-            <td class="status-absent">{{ c.absent }}</td>
-            <td class="status-excused">{{ c.excused }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <p class="no-classes">You haven’t joined any classes yet.</p>
-    {% endif %}
-  </section>
-
+    </form>
+  </div>
 </div>
+
 {% endblock %}
+
 {% block extra_js %}
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const classCodeInput = document.getElementById("class_code");
-  const sectionSelect = document.getElementById("section");
-
-  let typingTimer;
-  const TYPING_DELAY = 500; // ms
-
-  async function loadSectionsFor(code) {
-    if (!code) {
-      sectionSelect.innerHTML = '<option value="">-- Enter a class code first --</option>';
-      return;
-    }
-
-    sectionSelect.innerHTML = '<option value="" disabled>-- Checking class... --</option>';
-
-    try {
-      const res = await fetch(`/get_sections/${code}`);
-      if (!res.ok) throw new Error('Network error');
-
-      const data = await res.json();
-
-      // Clear dropdown first
-      sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
-
-      if (data.sections && data.sections.length > 0) {
-        data.sections.forEach(sec => {
-          const opt = document.createElement("option");
-          opt.value = sec;
-          opt.textContent = sec;
-          sectionSelect.appendChild(opt);
-        });
-
-        // Auto-select if section is only one
-        if (data.sections.length === 1) {
-          sectionSelect.value = data.sections[0];
-        }
-      } else {
-        sectionSelect.innerHTML = '<option value="" disabled>No class or sections found</option>';
-      }
-    } catch (err) {
-      console.error(err);
-      sectionSelect.innerHTML = '<option value="" disabled>Error loading sections</option>';
-    }
-  }
-
-  // Debounce typing
-  classCodeInput.addEventListener("input", () => {
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {
-      const code = classCodeInput.value.trim().toUpperCase();
-      loadSectionsFor(code);
-    }, TYPING_DELAY);
-  });
-
-  // blur
-  classCodeInput.addEventListener("blur", () => {
-    const code = classCodeInput.value.trim().toUpperCase();
-    loadSectionsFor(code);
-  });
-
-  // Clear dropdown if user clears class code manually
-  classCodeInput.addEventListener("keydown", (e) => {
-    if (e.key === "Backspace" || e.key === "Delete") {
-      setTimeout(() => {
-        if (!classCodeInput.value.trim()) {
-          sectionSelect.innerHTML = '<option value="">-- Enter a class code first --</option>';
-        }
-      }, 10);
-    }
-  });
-});
-</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard_student.js') }}"></script>
 {% endblock %}
