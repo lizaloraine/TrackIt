@@ -1,24 +1,65 @@
 {% extends "base.html" %}
+{% block navbar %}
+{% endblock %}
+
 {% block content %}
-  <h2>Login</h2>
-  <form method="post" action="{{ url_for('login') }}">
-    <label for="email">Email</label>
-    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+<div class="auth-page">
 
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+    <div class="split-container">
 
-    <button type="submit">Login</button>
-  </form>
+        <div class="left-side">
+            <img src="{{ url_for('static', filename='logo.png') }}" class="logo">
+            <h1>TrackIt</h1>
+            <p>Digital Attendance at Your Fingertips.</p>
+        </div>
 
-  <p style="text-align:center; margin-top:15px;">
-    No account?
-    <a href="{{ url_for('signup_student') }}">Sign up (Student)</a> or
-    <a href="{{ url_for('signup_teacher') }}">Sign up (Teacher)</a>
-  </p>
+        <div class="right-side">
 
-  <p style="text-align:center; font-size:13px; color:#666;">
-    Admin test credentials:<br>
-    <strong>admin@trackit.com / admin123</strong>
-  </p>
+            <div class="login-box">
+
+                <h2>Hello!</h2>
+
+                <!-- LOGIN FORM -->
+                <form method="post" action="{{ url_for('login') }}" class="login-form">
+
+                    <!-- EMAIL -->
+                    <div class="input-group">
+                        <span class="icon">
+                            <img src="{{ url_for('static', filename='icons/email.svg') }}">
+                        </span>
+                        <input type="email" id="email" name="email" placeholder="Email Address" required>
+                    </div>
+
+                    <!-- PASSWORD -->
+                    <div class="input-group">
+                        <span class="icon">
+                            <img src="{{ url_for('static', filename='icons/lock.svg') }}">
+                        </span>
+                        <input type="password" id="password" name="password" placeholder="Password" required>
+                    </div>
+
+                    <button type="submit" class="login-btn">Login</button>
+                </form>
+
+                <!-- LINKS -->
+                <p style="margin-top: 10px; font-size: 14px;">
+                    New to TrackIt? 
+                    <a href="{{ url_for('signup_student') }}">Sign Up</a>
+                </p>
+
+                <p style="margin-top: 5px; font-size: 14px;">
+                    <a href="#">Forgot Password?</a>
+                </p>
+
+                <p style="text-align:center; font-size:13px; color:#666; margin-top: 10px;">
+                    Admin test credentials:<br>
+                    <strong>admin@trackit.com / admin123</strong>
+                </p>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
 {% endblock %}

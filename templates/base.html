@@ -7,6 +7,8 @@
 
 </head>
 <body>
+
+    {% block navbar %}
   <nav>
     <a href="/">Home</a> |
     {% if session.user %}
@@ -19,6 +21,7 @@
       <a href="{{ url_for('signup_teacher') }}">Sign up (Teacher)</a>
     {% endif %}
   </nav>
+ {% endblock %}
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
