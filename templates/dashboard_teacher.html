@@ -1,225 +1,89 @@
-{% extends "base.html" %}
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher.css') }}">
-{% endblock %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Teacher Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher.css') }}">
+</head>
+<body>
 
-{% block content %}
-<div class="teacher-dashboard">
+<!-- TOP HEADER -->
+<header class="header-bar">
+  <button id="menuToggle" class="burger-btn">
+    <span></span><span></span><span></span>
+  </button>
 
-  <!-- Header -->
-  <header class="teacher-header">
-    <h1>Teacher Dashboard</h1>
-    <div class="user-info">
-      <span>Welcome, <strong>{{ user.name }}</strong></span>
-      <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-    </div>
-  </header>
-
-  <!-- Tabs -->
-  <nav class="tab-nav">
-    <button class="tab-btn active" data-tab="home">Home</button>
-    <button class="tab-btn" data-tab="classes">Classes</button>
-  </nav>
-
-  <!-- Home Tab -->
-  <section id="home" class="tab-content active">
-    <h2>Home</h2>
-    <p>Summary of your managed classes:</p>
-    {% if classes %}
-      <ul class="class-summary">
-        {% for c in classes %}
-          <li>{{ c }}</li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="no-classes">You haven’t added any classes yet.</p>
-    {% endif %}
-  </section>
-
-  <!-- Classes Tab -->
-  <section id="classes" class="tab-content">
-    <div class="tab-header">
-      <h2>Your Classes</h2>
-      <button id="addClassBtn" class="btn-primary">Add Class</button>
-    </div>
-
-    <!-- Class List -->
-    <div class="class-list" id="classList">
-      {% for c in classes %}
-      <div class="class-card" data-class="{{ c }}">
-        <h3>{{ c }}</h3>
-      </div>
-      {% endfor %}
-    </div>
-
-    <!-- Student Attendance Section -->
-    <div id="studentSection" class="student-section" style="display:none;">
-      <div class="attendance-header">
-        <h3 id="selectedClassTitle">Class:</h3>
-        <div class="attendance-tools">
-          <label for="attendanceDate">Date:</label>
-          <input type="date" id="attendanceDate">
-        </div>
-      </div>
-
-      <table id="studentTable" class="student-table">
-        <thead>
-          <tr>
-            <th>Student Name</th>
-            <th>Present</th>
-            <th>Absent</th>
-            <th>Excused</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Dynamically filled -->
-        </tbody>
-      </table>
-
-      <button id="saveAttendanceBtn" class="btn-save">Save Attendance</button>
-    </div>
-  </section>
-
-  <!-- Add Class Modal -->
-  <div id="addClassModal" class="modal">
-    <div class="modal-content">
-      <h3>Add New Class</h3>
-      <form id="addClassForm" method="POST">
-  <input type="hidden" name="action" value="add_class">
-
-  <label for="class_code">Class Code:</label>
-  <input type="text" id="class_code" name="class_code" placeholder="e.g. CSE402" required>
-
-  <label for="section">Section:</label>
-  <select id="section" name="section" required>
-    <option value="">-- Select Section --</option>
-    <!-- Dynamic dropdown -->
-  </select>
-
-  <div class="modal-buttons">
-    <button type="submit" class="btn-primary">Add</button>
-    <button type="button" id="closeModal" class="btn-cancel">Cancel</button>
+  <div class="header-right">
+    <div class="user-icon"></div>
+    <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
   </div>
-</form>
-    </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="sidebar">
+  <h2 id="sidebarTitle" class="sidebar-title">TrackIt</h2>
+
+  <nav class="sidebar-menu">
+  <a href="{{ url_for('dashboard') }}" class="side-link active">Home</a>
+  <a href="/dashboard/teacher/classes" class="side-link">Classes</a>
+  <a href="#" class="side-link" id="addClassSidebarBtn">Add Class</a>
+  <a href="{{ url_for('logout') }}" class="side-link">Logout</a>
+</nav>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="teacher-dashboard">
+
+  <h1 class="welcome">Welcome, {{ user.name }}!</h1>
+
+  <div class="card">
+    <h2 class="card-title">List of Managed Classes</h2>
+
+    <table class="class-table">
+  <thead>
+    <tr>
+      <th>Class Code</th>
+      <th>Section</th>
+      <th>Students</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for c in classes %}
+    <tr>
+      <td>{{ c.class_code or '' }}</td>
+      <td>{{ c.section or '' }}</td>
+      <td>{{ c.student_count or 0 }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
   </div>
-</div>
+
+</main>
 
 <script>
-// Tab switching
-const tabButtons = document.querySelectorAll('.tab-btn');
-const tabContents = document.querySelectorAll('.tab-content');
-tabButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    tabButtons.forEach(b => b.classList.remove('active'));
-    tabContents.forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-  });
+const sidebar = document.getElementById("sidebar");
+const toggle = document.getElementById("menuToggle");
+const title = document.getElementById("sidebarTitle");
+
+// Toggle open / close
+toggle.addEventListener("click", () => {
+  sidebar.classList.toggle("open");
 });
 
-// Modal
-const modal = document.getElementById('addClassModal');
-const openModalBtn = document.getElementById('addClassBtn');
-const closeModalBtn = document.getElementById('closeModal');
-
-openModalBtn.addEventListener('click', () => modal.style.display = 'flex');
-closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
-window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
-
-// Attendance handling
-let currentClassCode = null;
-let currentAttendance = [];
-const studentSection = document.getElementById('studentSection');
-const studentTableBody = document.querySelector('#studentTable tbody');
-const selectedClassTitle = document.getElementById('selectedClassTitle');
-
-document.querySelectorAll('.class-card').forEach(card => {
-  card.addEventListener('click', () => {
-    currentClassCode = card.dataset.class;
-    selectedClassTitle.textContent = "Class: " + currentClassCode;
-    studentSection.style.display = 'block';
-
-    studentTableBody.innerHTML = '';
-    fetch(`/get_students/${currentClassCode}`)
-      .then(res => res.json())
-      .then(data => {
-        currentAttendance = data.students.map(s => ({
-          student_id: s.id, status: 'present'
-        }));
-
-        data.students.forEach(s => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${s.name}</td>
-            <td><input type="radio" name="status-${s.id}" value="present" checked></td>
-            <td><input type="radio" name="status-${s.id}" value="absent"></td>
-            <td><input type="radio" name="status-${s.id}" value="excused"></td>
-          `;
-          studentTableBody.appendChild(row);
-        });
-
-        document.querySelectorAll('input[type=radio]').forEach(radio => {
-          radio.addEventListener('change', () => {
-            const sid = radio.name.split('-')[1];
-            const record = currentAttendance.find(a => a.student_id === sid);
-            if (record) record.status = radio.value;
-          });
-        });
-      });
-  });
+// Close when clicking "TrackIt"
+title.addEventListener("click", () => {
+  sidebar.classList.remove("open");
 });
 
-// Save attendance
-document.getElementById('saveAttendanceBtn').addEventListener('click', () => {
-  if (!currentClassCode) {
-    alert('Select a class first!');
-    return;
+// Close when clicking outside sidebar
+document.addEventListener("click", (e) => {
+  if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+    sidebar.classList.remove("open");
   }
-  fetch(`/save_attendance/${currentClassCode}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ attendance: currentAttendance })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === 'success') alert('Attendance saved!');
-    else alert('Error: ' + data.message);
-  });
 });
-
-// Dynamic section dropdown
-const classInput = document.getElementById('class_code');
-const sectionSelect = document.getElementById('section');
-
-classInput.addEventListener('change', async () => {
-  const code = classInput.value.trim().toUpperCase();
-  sectionSelect.innerHTML = '<option value="">Loading...</option>';
-  if (!code) {
-    sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
-    return;
-  }
-
-  const resp = await fetch(`/get_sections/${code}`);
-  if (!resp.ok) {
-    sectionSelect.innerHTML = '<option value="">No sections found</option>';
-    return;
-  }
-  const data = await resp.json();
-  const sections = data.sections;
-  if (!sections.length) {
-    sectionSelect.innerHTML = '<option value="">No sections found</option>';
-    return;
-  }
-
-  sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
-  sections.forEach(sec => {
-    const opt = document.createElement('option');
-    opt.value = sec;
-    opt.textContent = sec;
-    sectionSelect.appendChild(opt);
-  });
-});
-
 </script>
-{% endblock %}
+
+</body>
+</html>

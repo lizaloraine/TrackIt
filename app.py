@@ -418,8 +418,9 @@ def dashboard():
                     flash("Class joined!", "success")
             return redirect(url_for('dashboard'))
 
+
         # GET: prepare classes summary for teacher home
-        # Normalize classes for template: list of {'class_code','section','subjectName'}
+        # Normalize classes for template: list of {'class_code','section','subjectName','student_count'}
         teacher_classes = []
         for entry in classes:
             if isinstance(entry, dict):
@@ -428,9 +429,22 @@ def dashboard():
             else:
                 cc = str(entry)
                 sec = ''
+    
+            # Get class document
             class_doc = get_class_doc(cc)
             subj = class_doc.to_dict().get('subjectName') if class_doc and class_doc.exists else ''
-            teacher_classes.append({'class_code': cc, 'section': sec, 'subjectName': subj})
+    
+            # Count students in this class
+            counts = count_students_and_teachers(cc)
+    
+            # Append to teacher_classes list
+            teacher_classes.append({
+                'class_code': cc,
+                'section': sec,
+                'subjectName': subj,
+                'student_count': counts['student_count']
+            })
+
         return render_template('dashboard_teacher.html', classes=teacher_classes, user=user)
 
     # ---------- Student ----------
@@ -481,6 +495,85 @@ def dashboard():
 
     flash("Unknown role", "danger")
     return redirect(url_for('login'))
+
+
+
+
+
+
+#------------TEACHER TEACHER--------------
+@app.route('/dashboard/teacher/classes')
+def dashboard_teacher_class():
+    if 'user' not in session or session['user']['role'] != 'teacher':
+        return redirect(url_for('login'))
+
+    user = session['user']
+    user_id = user['id']
+
+    # Fetch teacher classes
+    user_doc_snap = db.collection('users').document(user_id).get()
+    user_doc = user_doc_snap.to_dict() if user_doc_snap.exists else {}
+    classes = user_doc.get('classes', [])
+
+    teacher_classes = []
+    for entry in classes:
+        cc = entry.get('class_code') if isinstance(entry, dict) else str(entry)
+        sec = entry.get('section') if isinstance(entry, dict) else ''
+
+        class_doc = get_class_doc(cc)
+        subj = class_doc.to_dict().get('subjectName') if class_doc and class_doc.exists else ''
+
+        counts = count_students_and_teachers(cc)
+
+        teacher_classes.append({
+            'class_code': cc,
+            'section': sec,
+            'subjectName': subj,
+            'student_count': counts['student_count']
+        })
+
+    return render_template('dashboard_teacher_class.html', classes=teacher_classes, user=user)
+
+
+
+@app.route('/dashboard/teacher/class/<class_code>/<section>')
+def dashboard_teacher_view_class(class_code, section):
+    if 'user' not in session or session['user']['role'] != 'teacher':
+        return redirect(url_for('login'))
+
+    class_code = class_code.upper()
+    section = section.strip()
+
+    # Get class doc and subject
+    class_doc = get_class_doc(class_code)
+    if not class_doc or not class_doc.exists:
+        flash("Class not found", "danger")
+        return redirect(url_for('dashboard_teacher_class'))
+
+    class_data = class_doc.to_dict()
+    subject_name = class_data.get('subjectName', '')
+
+    # Get students
+    students = get_students_in_section(class_code, section)
+
+    return render_template(
+        'dashboard_teacher_view_class.html',
+        user=session['user'],
+        class_code=class_code,
+        section=section,
+        subject_name=subject_name,
+        students=students
+    )
+
+
+
+
+
+
+
+
+
+
 
 # ---------- AJAX endpoints ----------
 

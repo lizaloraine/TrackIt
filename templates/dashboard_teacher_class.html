@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Classes</title>
+
+  <!-- Separate CSS file -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher_class.css') }}">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header-bar">
+    <button id="menuToggle" class="burger-btn">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="header-right">
+      <div class="user-icon"></div>
+      <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar">
+    <h2 id="sidebarTitle" class="sidebar-title">TrackIt</h2>
+
+    <nav class="sidebar-menu">
+      <a href="{{ url_for('dashboard') }}" class="side-link">Home</a>
+      <a href="{{ url_for('dashboard_teacher_class') }}" class="side-link active">Classes</a>
+      <a href="#" class="side-link" id="addClassSidebarBtn">Add Class</a>
+      <a href="{{ url_for('logout') }}" class="side-link">Logout</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="classes-page">
+
+    <div class="classes-header">
+      <h1>Classes</h1>
+      <button id="addClassBtn" class="add-class-btn">Add Class</button>
+    </div>
+
+    <div class="class-list">
+
+      {% for c in classes %}
+      <div class="class-card" 
+     onclick="window.location.href='/dashboard/teacher/class/{{ c.class_code }}/{{ c.section }}'">
+
+        <div class="class-info">
+          <h2>{{ c.class_code }}</h2>
+          <p>{{ c.subjectName }}</p>
+          <p>Students: {{ c.student_count }}</p>
+        </div>
+        <span class="section-label">{{ c.section }}</span>
+      </div>
+      {% endfor %}
+
+    </div>
+
+  </main>
+
+  <!-- ADD CLASS MODAL -->
+  <div id="addClassModal" class="modal">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h3>Add Class</h3>
+        <span id="closeModal" class="close">&times;</span>
+      </div>
+
+      <div class="modal-body">
+        <form id="addClassForm" method="POST" action="{{ url_for('dashboard') }}">
+          
+          <input type="hidden" name="action" value="add_class">
+
+          <input 
+            type="text" 
+            id="class_code" 
+            name="class_code" 
+            placeholder="Enter Class Code" 
+            required
+          >
+
+          <select id="section" name="section" required>
+            <option value="">-- Select Section --</option>
+          </select>
+
+          <button type="submit" class="join-btn">Join Class</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT -->
+  <script>
+    /* -----------------------------
+       SIDEBAR TOGGLE
+    ------------------------------*/
+    const sidebar = document.getElementById("sidebar");
+    const toggle = document.getElementById("menuToggle");
+    const title = document.getElementById("sidebarTitle");
+
+    toggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+
+    title.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+        sidebar.classList.remove("open");
+      }
+    });
+
+
+    /* -----------------------------
+       MODAL
+    ------------------------------*/
+    const modal = document.getElementById("addClassModal");
+    const openModalButtons = [
+      document.getElementById("addClassBtn"),
+      document.getElementById("addClassSidebarBtn")
+    ];
+    const closeModal = document.getElementById("closeModal");
+
+    openModalButtons.forEach(btn => {
+      if (btn) btn.onclick = () => modal.style.display = "flex";
+    });
+
+    closeModal.onclick = () => modal.style.display = "none";
+
+    window.onclick = (e) => {
+      if (e.target === modal) modal.style.display = "none";
+    };
+
+
+    /* -----------------------------
+       DYNAMIC SECTION DROPDOWN
+    ------------------------------*/
+    const classInput = document.getElementById("class_code");
+    const sectionSelect = document.getElementById("section");
+
+    classInput.addEventListener("input", async () => {
+      const code = classInput.value.trim().toUpperCase();
+
+      if (!code) {
+        sectionSelect.innerHTML = `<option value="">-- Select Section --</option>`;
+        return;
+      }
+
+      sectionSelect.innerHTML = `<option value="">Loading...</option>`;
+
+      try {
+        const response = await fetch(`/get_sections/${code}`);
+        if (!response.ok) {
+          sectionSelect.innerHTML = `<option value="">No sections found</option>`;
+          return;
+        }
+
+        const data = await response.json();
+        const sections = data.sections;
+
+        if (!sections || !sections.length) {
+          sectionSelect.innerHTML = `<option value="">No sections found</option>`;
+          return;
+        }
+
+        sectionSelect.innerHTML = `<option value="">-- Select Section --</option>`;
+        sections.forEach(sec => {
+          sectionSelect.innerHTML += `<option value="${sec}">${sec}</option>`;
+        });
+
+      } catch (err) {
+        sectionSelect.innerHTML = `<option value="">Error loading</option>`;
+      }
+    });
+  </script>
+
+</body>
+</html>

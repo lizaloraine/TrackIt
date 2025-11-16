@@ -12,7 +12,11 @@
 }
 
 html, body {
-    overflow: hidden !important;
+    overflow: auto !important;
+}
+
+.logo {
+    width: 20%;
 }
 
 .auth-page nav,
@@ -39,6 +43,7 @@ html, body {
     justify-content: center;
     align-items: center;
     padding-left: 5%;
+    z-index: 1;
 }
 
 
@@ -52,6 +57,8 @@ html, body {
     justify-content: center;
     align-items: center;
     position: relative;
+    overflow-y: auto;
+    z-index: 10;
 }
 
 .right-side::after,
@@ -60,7 +67,9 @@ html, body {
     position: absolute;
     border-radius: 50%;
     border: 3px solid rgba(255, 255, 255, 0.3);
+    pointer-events: none;   /* ✅ allows clicks to pass through */
 }
+
 
 .right-side::after {
     width: 380px;

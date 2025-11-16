@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ class_code }} - Attendance</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher_view_class.css') }}">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header-bar">
+    <button id="menuToggle" class="burger-btn">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="header-right">
+      <div class="user-icon"></div>
+      <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar">
+    <h2 id="sidebarTitle" class="sidebar-title">TrackIt</h2>
+
+    <nav class="sidebar-menu">
+      <a href="{{ url_for('dashboard') }}" class="side-link">Home</a>
+      <a href="{{ url_for('dashboard_teacher_class') }}" class="side-link">Classes</a>
+      <a href="{{ url_for('logout') }}" class="side-link">Logout</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="attendance-page">
+
+    <div class="page-header">
+      <h1>Classes &gt; {{ class_code }}</h1>
+      <button class="back-btn"><a href="{{ url_for('dashboard_teacher_class') }}" class="back-btn">Back</a></button>
+
+    </div>
+
+    <div class="subject-box">
+      <div class="subject-header">
+        <h2>{{ subject_name }}</h2>
+        <button id="saveAttendanceBtn" class="save-btn">Save Changes</button>
+      </div>
+
+      <h3 class="section-title">{{ section }}</h3>
+
+      <table class="attendance-table">
+        <thead>
+          <tr>
+            <th>Student Name</th>
+            <th>Present</th>
+            <th>Absent</th>
+            <th>Excused</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in students %}
+          <tr data-id="{{ s.id }}">
+            <td>{{ loop.index }}. {{ s.name }}</td>
+            <td><input type="radio" name="status-{{ s.id }}" value="present" checked></td>
+            <td><input type="radio" name="status-{{ s.id }}" value="absent"></td>
+            <td><input type="radio" name="status-{{ s.id }}" value="excused"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- JAVASCRIPT -->
+  <script>
+    // Sidebar toggle
+    const sidebar = document.getElementById("sidebar");
+    const toggle = document.getElementById("menuToggle");
+    const title = document.getElementById("sidebarTitle");
+
+    toggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+    title.addEventListener("click", () => sidebar.classList.remove("open"));
+    document.addEventListener("click", e => {
+      if (!sidebar.contains(e.target) && !toggle.contains(e.target))
+        sidebar.classList.remove("open");
+    });
+
+    // Attendance save handler
+    const saveBtn = document.getElementById("saveAttendanceBtn");
+    saveBtn.addEventListener("click", async () => {
+      const rows = document.querySelectorAll("tbody tr");
+      const attendance = [];
+
+      rows.forEach(row => {
+        const id = row.getAttribute("data-id");
+        const selected = row.querySelector("input[type=radio]:checked");
+        attendance.push({ student_id: id, status: selected.value });
+      });
+
+      const res = await fetch(`/save_attendance/{{ class_code }}/{{ section }}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attendance })
+      });
+
+      const data = await res.json();
+      if (data.status === "success") {
+        alert("Attendance saved successfully!");
+      } else {
+        alert("Error: " + data.message);
+      }
+    });
+  </script>
+
+</body>
+</html>

@@ -16,6 +16,10 @@ html, body {
     overflow: hidden !important;
 }
 
+.logo {
+    width: 20%;
+}
+
 .split-container {
     display: flex;
     width: 100%;
