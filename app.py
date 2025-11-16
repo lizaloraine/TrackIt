@@ -48,6 +48,29 @@ def create_user_record(name, email, pw_hash, role, extra_id_field=None):
 
     return db.collection('users').add(data)
 
+
+def create_user_record_student(name, email, pw_hash, role, extra_id_field=None, gender=None):
+    """
+    Creates a user doc.
+    'classes' is an array of maps [{'class_code': 'CSE402', 'section': 'CS-4101'}]
+    """
+    data = {
+        'name': name,
+        'email': email,
+        'role': role,
+        'classes': [],
+        'password_hash': pw_hash,
+        'gender': gender
+    }
+    if role == 'student':
+        data['student_id'] = extra_id_field or ''
+    if role == 'teacher':
+        data['teacher_id'] = extra_id_field or ''
+
+    return db.collection('users').add(data)
+
+
+
 def get_class_doc(class_code):
     """Return DocumentSnapshot for a class (class_code should be uppercase)"""
     return db.collection('classes').document(class_code).get()
@@ -259,6 +282,11 @@ def login():
 
     return render_template('login.html')
 
+@app.route('/signup_role')
+def signup_role():
+    return render_template('signup_role.html')
+
+
 @app.route('/signup_student', methods=['GET', 'POST'])
 def signup_student():
     if request.method == 'POST':
@@ -266,18 +294,21 @@ def signup_student():
         email = request.form['email'].lower()
         password = request.form['password']
         student_id = request.form.get('student_id', '')
+        gender = request.form.get('gender', '')  \
 
         if get_user_by_email(email):
             flash("Email already exists!", "warning")
             return redirect(url_for('signup_student'))
 
         pw_hash = generate_password_hash(password)
-        create_user_record(name, email, pw_hash, 'student', student_id)
+
+        create_user_record_student(name, email, pw_hash, 'student', student_id, gender)
 
         flash("Account created!", "success")
         return redirect(url_for('login'))
 
     return render_template('signup_student.html')
+
 
 @app.route('/signup_teacher', methods=['GET', 'POST'])
 def signup_teacher():

@@ -1,24 +1,78 @@
 {% extends "base.html" %}
+
+{% block navbar %}
+{% endblock %}
+
 {% block content %}
-  <h2>Teacher Sign Up</h2>
-  <form method="post" action="{{ url_for('signup_teacher') }}">
-    <label for="name">Full Name</label>
-    <input id="name" name="name" placeholder="Enter your full name" required>
+<div class="auth-page signup-page">
 
-    <label for="email">Email</label>
-    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+    <div class="split-container">
 
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+        <!-- LEFT SIDE -->
+        <div class="left-side">
+            <img src="{{ url_for('static', filename='logo.png') }}" class="logo">
+            <h1>TrackIt</h1>
+            <p>Digital Attendance at Your Fingertips.</p>
+        </div>
 
-    <label for="teacher_id">Teacher ID</label>
-    <input id="teacher_id" name="teacher_id" placeholder="Enter your teacher ID" required>
+        <!-- RIGHT SIDE -->
+        <div class="right-side">
 
-    <button type="submit">Create Teacher Account</button>
-  </form>
+            <div class="signup-box">
 
-  <p style="text-align:center; margin-top:15px;">
-    Already have an account?
-    <a href="{{ url_for('login') }}">Login here</a>
-  </p>
+                <h2>Hello!</h2>
+                <p>Sign Up to Get Started</p>
+
+                <!-- TEACHER SIGNUP FORM -->
+                <form method="post" action="{{ url_for('signup_teacher') }}" class="signup-form">
+
+                    <!-- FULL NAME -->
+                    <div class="input-group">
+                        <span class="icon">
+                            <img src="{{ url_for('static', filename='icons/user.svg') }}">
+                        </span>
+                        <input id="name" name="name" placeholder="Enter your full name" required>
+                    </div>
+
+                    <!-- EMAIL -->
+                    <div class="input-group">
+                        <span class="icon">
+                            <img src="{{ url_for('static', filename='icons/email.svg') }}">
+                        </span>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    </div>
+
+                    <!-- PASSWORD -->
+                    <div class="input-group">
+                        <span class="icon">
+                            <img src="{{ url_for('static', filename='icons/lock.svg') }}">
+                        </span>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    </div>
+
+                    <!-- TEACHER ID -->
+                    <div class="input-group">
+                        <span class="icon">
+                            <img src="{{ url_for('static', filename='icons/id.svg') }}">
+                        </span>
+                        <input id="teacher_id" name="teacher_id" placeholder="Enter your teacher ID" required>
+                    </div>
+
+                    <!-- REGISTER BUTTON -->
+                    <button type="submit">Register</button>
+
+                </form>
+
+                <p style="text-align:center; margin-top:15px;">
+                    Already have an account?
+                    <a href="{{ url_for('login') }}">Login here</a>
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 {% endblock %}
