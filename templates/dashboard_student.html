@@ -1,107 +1,112 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard – TrackIt</title>
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_student.css') }}">
-{% endblock %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_student.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
 
-{% block content %}
+<body>
 
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="nav-left">
+        <strong>TrackIt</strong>
+    </div>
+    <div class="nav-right">
+        <a href="/profile">{{ session.user_name }}</a>
+        <a href="/logout">Logout</a>
+    </div>
+</nav>
+
+<!-- MAIN DASHBOARD -->
 <main class="student-dashboard">
 
-  <!-- LEFT COLUMN -->
-  <section class="left-col">
+    <!-- LEFT COLUMN -->
+    <section class="left-col">
 
-    <!-- Notifications -->
-    <div class="panel notifications-panel">
-      <div class="panel-header">
-        <h3>Notifications</h3>
-        <button id="mark-read" class="action-btn">Mark all read</button>
-      </div>
-      <div id="notifications-list" class="notifications-list">
-        <div class="skeleton-item"></div>
-        <div class="skeleton-item"></div>
-      </div>
-    </div>
+        <!-- JOIN BUTTON -->
+        <button class="join-btn" id="join-class-btn">Join Class</button>
 
-    <!-- Search & Filters -->
-    <div class="panel filter-panel">
-      <input id="search-classes" placeholder="Search classes..." />
-      <div class="filters">
-        <select id="filter-status">
-          <option value="">All</option>
-          <option value="low-attendance">Low Attendance (&lt;60%)</option>
-          <option value="high-absent">High Absent</option>
-        </select>
-        <select id="sort-classes">
-          <option value="alpha">Sort: A–Z</option>
-          <option value="most-absent">Most Absent</option>
-          <option value="attendance-desc">Best Attendance</option>
-        </select>
-      </div>
-    </div>
+        <!-- Notifications -->
+        <div class="panel notifications-panel">
+            <div class="panel-header">
+                <h3>Notifications</h3>
+                <button id="mark-read" class="action-btn">Mark all read</button>
+            </div>
+            <div id="notifications-list" class="notifications-list">
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+            </div>
+        </div>
 
-    <!-- Class Cards -->
-    <div id="classes-cards" class="classes-cards">
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-    </div>
+        <!-- Search + Filters -->
+        <div class="panel filter-panel">
+            <input id="search-classes" placeholder="Search classes...">
 
-  </section>
+            <div class="filters">
+                <select id="filter-status">
+                    <option value="">All</option>
+                    <option value="low-attendance">Low Attendance (&lt;60%)</option>
+                    <option value="high-absent">High Absent</option>
+                </select>
 
-  <!-- RIGHT COLUMN -->
-  <aside class="right-col">
+                <select id="sort-classes">
+                    <option value="alpha">Sort: A–Z</option>
+                    <option value="most-absent">Most Absent</option>
+                    <option value="attendance-desc">Best Attendance</option>
+                </select>
+            </div>
+        </div>
 
-    <!-- Attendance Summary -->
-    <div class="panel attendance-analytics">
-      <div class="panel-header">
-        <h3>Attendance Summary</h3>
-      </div>
-      <canvas id="attendanceChart"></canvas>
-      <div class="attendance-stats" id="attendance-stats"></div>
-    </div>
+        <!-- Classes -->
+        <div id="classes-cards" class="classes-cards">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+        </div>
 
-    <!-- Class Details -->
-    <div class="panel class-detail-panel" id="class-detail-panel">
-      <div class="panel-header">
-        <h3>Class Details</h3>
-      </div>
-      <div id="class-detail-content">
-        <p class="muted">Select a class card to view details (attendance calendar, topics, download report).</p>
-      </div>
-    </div>
+    </section>
 
-  </aside>
+    <!-- RIGHT COLUMN -->
+    <aside class="right-col">
+
+        <!-- Attendance Summary -->
+        <div class="panel attendance-analytics">
+            <div class="panel-header"><h3>Attendance Summary</h3></div>
+            <canvas id="attendanceChart"></canvas>
+            <div id="attendance-stats" class="attendance-stats"></div>
+        </div>
+
+        <!-- Class Details -->
+        <div class="panel class-detail-panel">
+            <div class="panel-header"><h3>Class Details</h3></div>
+            <div id="class-detail-content">
+                <p class="muted">Select a class card to view details (attendance calendar, topics, download report).</p>
+            </div>
+        </div>
+
+    </aside>
 
 </main>
 
 <!-- JOIN CLASS MODAL -->
-<div id="join-modal" class="modal" aria-hidden="true">
-  <div class="modal-content">
-    <button class="close-modal" data-close>&times;</button>
-    <h3>Join Class</h3>
-    <form id="join-form" method="POST" action="{{ url_for('dashboard') }}">
-      <input type="hidden" name="action" value="join_class">
-      <div class="form-group">
-        <label for="class_code_modal">Class Code</label>
-        <input id="class_code_modal" name="class_code" required />
-      </div>
-      <div class="form-group">
-        <label for="section_modal">Section</label>
-        <select id="section_modal" name="section" required>
-          <option value="">-- Enter a class code first --</option>
-        </select>
-      </div>
-      <div class="modal-actions">
-        <button type="button" class="btn-cancel" data-close>Cancel</button>
-        <button type="submit" class="btn-confirm">Confirm Join</button>
-      </div>
-    </form>
-  </div>
+<div id="modal-bg" class="modal-bg">
+    <div class="modal-box">
+        <h2>Join Class</h2>
+
+        <input id="class-code-input" placeholder="Class Code">
+
+        <div class="btn-row">
+            <button id="cancel-join" class="btn-cancel">Cancel</button>
+            <button id="confirm-join" class="btn-join">Join</button>
+        </div>
+    </div>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='js/dashboard_student.js') }}"></script>
-{% endblock %}
+
+</body>
+</html>
