@@ -1,38 +1,43 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>TrackIt</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <title>{% block title %}TrackIt{% endblock %}</title>
+
+    <!-- Global Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Dashboard / Page-Specific Styles -->
+    {% block extra_css %}{% endblock %}
 </head>
+
 <body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>TrackIt</h2>
+        </div>
 
-    {% block navbar %}
-  <nav>
-    <a href="/">Home</a> |
-    {% if session.user %}
-      <strong>{{ session.user.name }}</strong> ({{ session.user.role }}) |
-      <a href="{{ url_for('dashboard') }}">Dashboard</a> |
-      <a href="{{ url_for('logout') }}">Logout</a>
-    {% else %}
-      <a href="{{ url_for('login') }}">Login</a> |
-      <a href="{{ url_for('signup_student') }}">Sign up (Student)</a> |
-      <a href="{{ url_for('signup_teacher') }}">Sign up (Teacher)</a>
-    {% endif %}
-  </nav>
- {% endblock %}
+        <nav class="sidebar-menu">
+            <a href="/dashboard" class="menu-item">Dashboard</a>
+            <a href="/classes" class="menu-item">My Classes</a>
+            <a href="/profile" class="menu-item">Profile</a>
+        </nav>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, msg in messages %}
-        <div class="flash {{ category }}">{{ msg }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+    </aside>
 
-  <div class="container">
-    {% block content %}{% endblock %}
-  </div>
+    <!-- Main Content Wrapper -->
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Global JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- Page-Specific JS -->
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

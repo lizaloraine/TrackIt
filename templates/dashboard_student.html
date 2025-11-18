@@ -1,16 +1,21 @@
 {% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_student.css') }}">
+{% endblock %}
+
 {% block content %}
 
-<main class="dashboard-container">
+<main class="student-dashboard">
 
-  <!-- Left Column -->
+  <!-- LEFT COLUMN -->
   <section class="left-col">
 
     <!-- Notifications -->
     <div class="panel notifications-panel">
       <div class="panel-header">
         <h3>Notifications</h3>
-        <button id="mark-read">Mark all read</button>
+        <button id="mark-read" class="action-btn">Mark all read</button>
       </div>
       <div id="notifications-list" class="notifications-list">
         <div class="skeleton-item"></div>
@@ -20,11 +25,11 @@
 
     <!-- Search & Filters -->
     <div class="panel filter-panel">
-      <input id="search-classes" placeholder="Search classes...">
+      <input id="search-classes" placeholder="Search classes..." />
       <div class="filters">
         <select id="filter-status">
           <option value="">All</option>
-          <option value="low-attendance">Low Attendance (&lt; 60%)</option>
+          <option value="low-attendance">Low Attendance (&lt;60%)</option>
           <option value="high-absent">High Absent</option>
         </select>
         <select id="sort-classes">
@@ -43,21 +48,19 @@
 
   </section>
 
-  <!-- Right Column -->
+  <!-- RIGHT COLUMN -->
   <aside class="right-col">
 
+    <!-- Attendance Summary -->
     <div class="panel attendance-analytics">
       <div class="panel-header">
         <h3>Attendance Summary</h3>
       </div>
-
-      <canvas id="attendanceChart" width="400" height="240"></canvas>
-
-      <div class="attendance-stats" id="attendance-stats">
-        <!-- Filled by JS -->
-      </div>
+      <canvas id="attendanceChart"></canvas>
+      <div class="attendance-stats" id="attendance-stats"></div>
     </div>
 
+    <!-- Class Details -->
     <div class="panel class-detail-panel" id="class-detail-panel">
       <div class="panel-header">
         <h3>Class Details</h3>
@@ -71,27 +74,23 @@
 
 </main>
 
-<!-- Join Class Modal -->
+<!-- JOIN CLASS MODAL -->
 <div id="join-modal" class="modal" aria-hidden="true">
   <div class="modal-content">
     <button class="close-modal" data-close>&times;</button>
     <h3>Join Class</h3>
-
     <form id="join-form" method="POST" action="{{ url_for('dashboard') }}">
       <input type="hidden" name="action" value="join_class">
-
       <div class="form-group">
         <label for="class_code_modal">Class Code</label>
         <input id="class_code_modal" name="class_code" required />
       </div>
-
       <div class="form-group">
         <label for="section_modal">Section</label>
         <select id="section_modal" name="section" required>
           <option value="">-- Enter a class code first --</option>
         </select>
       </div>
-
       <div class="modal-actions">
         <button type="button" class="btn-cancel" data-close>Cancel</button>
         <button type="submit" class="btn-confirm">Confirm Join</button>
