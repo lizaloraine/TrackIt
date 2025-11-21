@@ -93,18 +93,25 @@
 </main>
 
 <!-- JOIN CLASS MODAL -->
-<div id="modal-bg" class="modal-bg">
-    <div class="modal-box">
-        <h2>Join Class</h2>
+<div class="modal-bg" id="modal-bg">
+  <div class="modal-box">
+    <h3>Join a Class</h3>
 
-        <input id="class-code-input" placeholder="Class Code">
+    <label>Class Code</label>
+    <input type="text" id="class-code-input" placeholder="Enter class code">
 
-        <div class="btn-row">
-            <button id="cancel-join" class="btn-cancel">Cancel</button>
-            <button id="confirm-join" class="btn-join">Join</button>
-        </div>
+    <label>Select Section</label>
+    <select id="class-section-select">
+      <option value="">Select a section…</option>
+    </select>
+
+    <div class="btn-row">
+      <button id="cancel-join" class="btn-cancel">Cancel</button>
+      <button id="confirm-join" class="btn-join">Join</button>
     </div>
+  </div>
 </div>
+
 
 <script src="{{ url_for('static', filename='js/dashboard_student.js') }}"></script>
 

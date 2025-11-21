@@ -319,3 +319,7 @@ html, body {
         width: 90%;
     }
 }
+
+.auth-content {
+    margin-left: 0 !important;
+}

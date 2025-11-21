@@ -14,6 +14,8 @@
 </head>
 
 <body>
+
+    {% if not auth_page %}
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
@@ -28,9 +30,10 @@
 
         <button id="logoutBtn" class="logout-btn">Logout</button>
     </aside>
+    {% endif %}
 
     <!-- Main Content Wrapper -->
-    <div class="main-content">
+    <div class="main-content {% if auth_page %}auth-content{% endif %}">
         {% block content %}{% endblock %}
     </div>
 
