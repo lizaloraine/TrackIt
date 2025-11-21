@@ -369,15 +369,15 @@ def dashboard():
         return render_template('dashboard_admin.html', classes=classes, user=user)
 
     # ---------- Teacher ----------
+    # ---------- Teacher ----------
     if role == 'teacher':
-        # fetch teacher user doc and classes list
+    # Fetch teacher doc
         user_doc_snap = db.collection('users').document(user_id).get()
         user_doc = user_doc_snap.to_dict() if user_doc_snap.exists else {}
-        classes = user_doc.get('classes', [])  # list of maps {'class_code','section'}
+        classes = user_doc.get('classes', [])  # list of {'class_code','section'}
 
+    # POST: joining class / adding class is unchanged
         if request.method == 'POST':
-            # Distinguish between "add_class" (teacher assigns self to a section)
-            # and other potential actions. We expect an action field from the form.
             action = request.form.get('action', '')
             if action == 'add_class':
                 class_code = request.form.get('class_code', '').strip().upper()
@@ -391,16 +391,14 @@ def dashboard():
                     flash("Class code not found!", "danger")
                     return redirect(url_for('dashboard'))
 
-                # ensure section exists (create if missing)
                 add_section_if_missing(class_code, section)
-
-                # assign teacher and add class to teacher's classes
                 assign_teacher_to_section(user_id, class_code, section)
                 add_class_to_user(user_id, class_code, section)
-                flash("Class added to your list and you are assigned as teacher for the section.", "success")
+
+                flash("Class added and assigned.", "success")
                 return redirect(url_for('dashboard'))
 
-            # fallback: treat as join class (legacy)
+            # fallback join logic
             class_code = request.form.get('class_code', '').strip().upper()
             section = request.form.get('section', '').strip()
             if class_code:
@@ -408,41 +406,43 @@ def dashboard():
                 if not class_doc.exists:
                     flash("Invalid class code!", "danger")
                 else:
-                    # if section provided, assign to that section; else just assign class
                     if section:
                         add_section_if_missing(class_code, section)
                         assign_teacher_to_section(user_id, class_code, section)
                         add_class_to_user(user_id, class_code, section)
-                    else:
-                        add_class_to_user(user_id, class_code, '')
+
                     flash("Class joined!", "success")
+
             return redirect(url_for('dashboard'))
 
-
-        # GET: prepare classes summary for teacher home
-        # Normalize classes for template: list of {'class_code','section','subjectName','student_count'}
+        # GET: Prepare list of real teacher sections
         teacher_classes = []
+
         for entry in classes:
             if isinstance(entry, dict):
                 cc = entry.get('class_code')
                 sec = entry.get('section')
             else:
-                cc = str(entry)
-                sec = ''
-    
-            # Get class document
+                continue  # ignore invalid entries
+
+
             class_doc = get_class_doc(cc)
-            subj = class_doc.to_dict().get('subjectName') if class_doc and class_doc.exists else ''
-    
-            # Count students in this class
-            counts = count_students_and_teachers(cc)
-    
-            # Append to teacher_classes list
+            if not class_doc or not class_doc.exists:
+                continue
+
+            cdata = class_doc.to_dict()
+            subject = cdata.get('subjectName', '')
+
+            # get section info
+            sec_data = cdata.get('sections', {}).get(sec, {})
+            students = sec_data.get('students', [])
+            student_count = len(students)
+
             teacher_classes.append({
-                'class_code': cc,
-                'section': sec,
-                'subjectName': subj,
-                'student_count': counts['student_count']
+                "class_code": cc,
+                "section": sec,
+                "subjectName": subject,
+                "student_count": student_count
             })
 
         return render_template('dashboard_teacher.html', classes=teacher_classes, user=user)
