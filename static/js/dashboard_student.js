@@ -1,4 +1,5 @@
 /* dashboard_student.js — improved UX, toasts, modal, chart, filtering, accessible */
+
 document.addEventListener("DOMContentLoaded", () => {
   initElements();
   initSkeletonLoading();
@@ -17,6 +18,7 @@ function initElements() {
   EL.cancelJoin = document.getElementById("cancel-join");
   EL.confirmJoin = document.getElementById("confirm-join");
   EL.classCodeInput = document.getElementById("class-code-input");
+  EL.classSectionSelect = document.getElementById("class-section-select");
   EL.notificationsList = document.getElementById("notifications-list");
   EL.markReadBtn = document.getElementById("mark-read");
   EL.classesContainer = document.getElementById("classes-cards");
@@ -25,7 +27,7 @@ function initElements() {
   EL.sortSelect = document.getElementById("sort-classes");
   EL.classDetail = document.getElementById("class-detail-content");
   EL.attendanceCanvas = document.getElementById("attendanceChart");
-  // graceful checks
+
   for (const k in EL) if (!EL[k]) EL[k] = null;
 }
 
@@ -46,11 +48,10 @@ function showToast(msg, ms = 2200) {
 
 /* ------------------------- SKELETON → DATA ------------------------- */
 function initSkeletonLoading() {
-  // replace skeletons with real content after a short delay
   setTimeout(() => {
     if (EL.notificationsList) {
       EL.notificationsList.innerHTML = "";
-      // sample notifs — replace with fetch('/api/notifications')
+      // sample notifications
       const sample = [
         { id: 1, text: "Welcome! Your semester starts next week." },
         { id: 2, text: "Math quiz scheduled for Friday." }
@@ -65,14 +66,12 @@ function initSkeletonLoading() {
 
     if (EL.classesContainer) {
       EL.classesContainer.innerHTML = "";
-      // sample classes — replace with fetch('/api/classes')
       const sampleClasses = [
         { id: 1, subject: "CSE 402", section: "A", attendance: 87 },
         { id: 2, subject: "CSE 401", section: "B", attendance: 62 },
         { id: 3, subject: "MATH 408", section: "C", attendance: 74 }
       ];
       renderClassCards(sampleClasses);
-      // also populate attendance stats for chart
       window._SAMPLE_CLASSES = sampleClasses;
     }
   }, 700);
@@ -82,13 +81,11 @@ function initSkeletonLoading() {
 function initModal() {
   if (!EL.joinBtn || !EL.modalBg) return;
 
-  // open
   EL.joinBtn.addEventListener("click", () => {
     EL.modalBg.classList.add("active");
     setTimeout(() => EL.classCodeInput?.focus(), 120);
   });
 
-  // close
   function close() {
     EL.modalBg.classList.remove("active");
     if (EL.classCodeInput) {
@@ -104,7 +101,6 @@ function initModal() {
   EL.cancelJoin?.addEventListener("click", close);
   EL.modalBg?.addEventListener("click", (e) => { if (e.target === EL.modalBg) close(); });
 
-  // keyboard
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") close();
     if (e.key === "Enter" && document.activeElement === EL.classCodeInput) {
@@ -116,9 +112,44 @@ function initModal() {
   EL.confirmJoin?.addEventListener("click", handleJoinClass);
 }
 
+/* ------------------------- FETCH CLASS SECTIONS ------------------------- */
+async function fetchClassSections(code) {
+  if (!code) return;
+
+  try {
+    const resp = await fetch(`/api/class/${code}/sections`);
+    const data = await resp.json();
+
+    EL.classSectionSelect.innerHTML = "";
+
+    if (!data.sections || data.sections.length === 0) {
+      EL.classSectionSelect.innerHTML =
+        `<option value="">No sections found</option>`;
+      return;
+    }
+
+    data.sections.forEach(sec => {
+      const opt = document.createElement("option");
+      opt.value = sec;
+      opt.innerText = sec;
+      EL.classSectionSelect.appendChild(opt);
+    });
+
+  } catch (err) {
+    EL.classSectionSelect.innerHTML =
+      `<option value="">Error loading</option>`;
+  }
+}
+
+EL.classCodeInput?.addEventListener("input", () => {
+  const code = EL.classCodeInput.value.trim().toUpperCase();
+  fetchClassSections(code);
+});
+
 /* ------------------------- JOIN CLASS ------------------------- */
 async function handleJoinClass() {
   if (!EL.classCodeInput) return;
+
   const code = EL.classCodeInput.value.trim();
   if (!code) {
     EL.classCodeInput.classList.add("input-error");
@@ -126,7 +157,13 @@ async function handleJoinClass() {
     EL.classCodeInput.focus();
     return;
   }
-  // UI lock
+
+  const section = EL.classSectionSelect.value;
+  if (!section) {
+    showToast("Please select a section.");
+    return;
+  }
+
   if (EL.confirmJoin) {
     EL.confirmJoin.disabled = true;
     EL.confirmJoin.innerText = "Joining…";
@@ -136,26 +173,20 @@ async function handleJoinClass() {
     const resp = await fetch("/student/join_class", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ class_code: code })
+      body: JSON.stringify({ class_code: code, section })
     });
 
-    // fallback if backend not ready
-    let data = { success: true, message: "Joined (demo) — no server called." };
-    if (resp && resp.ok) {
-      try { data = await resp.json(); } catch(e){ /* ignore parse error */ }
-    }
+    let data;
+    try { data = await resp.json(); } 
+    catch { showToast("Server error. Try again."); return; }
 
     if (data.success) {
       showToast(data.message || "Joined class successfully!");
-    
       if (window._SAMPLE_CLASSES && Array.isArray(window._SAMPLE_CLASSES)) {
-        window._SAMPLE_CLASSES.push({ id: Date.now(), subject: `New Class ${code}`, section: "X", attendance: 100 });
+        window._SAMPLE_CLASSES.push({ id: Date.now(), subject: `New Class ${code}`, section, attendance: 100 });
         renderClassCards(window._SAMPLE_CLASSES);
       }
-      // close modal after short delay
-      setTimeout(() => {
-        EL.modalBg.classList.remove("active");
-      }, 500);
+      setTimeout(() => EL.modalBg.classList.remove("active"), 500);
     } else {
       showToast(data.message || "Could not join class.", 3000);
       EL.classCodeInput.classList.add("input-error");
@@ -216,18 +247,13 @@ function showClassDetail(c) {
   `;
 }
 
-/* utility to safely inject text */
 function escapeHTML(str = "") {
-  return String(str).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 function escapeJS(s=""){ return String(s).replace(/'/g, "\\'"); }
+function downloadReport(subject) { showToast(`Preparing ${subject} report...`); }
 
-function downloadReport(subject) {
-  showToast(`Preparing ${subject} report...`);
-  // implement actual download route if needed
-}
-
-/* ------------------------- FILTERS (search/status/sort) ------------------------- */
+/* ------------------------- FILTERS ------------------------- */
 function initFilters() {
   if (!EL.classesContainer) return;
   const handler = () => {
@@ -258,7 +284,7 @@ function initFilters() {
   EL.sortSelect?.addEventListener("change", handler);
 }
 
-/* ------------------------- CHART.JS (attendance summary) ------------------------- */
+/* ------------------------- CHART.JS ------------------------- */
 let attendanceChart = null;
 function initAttendanceChart() {
   if (!EL.attendanceCanvas) return;
@@ -285,13 +311,10 @@ function initAttendanceChart() {
     options: {
       responsive: true,
       plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero:true, max: 100 }
-      }
+      scales: { y: { beginAtZero:true, max: 100 } }
     }
   });
 
-  // populate attendance stat boxes
   const stats = document.getElementById("attendance-stats");
   if (stats) {
     stats.innerHTML = sample.map(s => `<div class="stat-item">${escapeHTML(s.subject)}<br><strong>${String(s.attendance)}%</strong></div>`).join("");
