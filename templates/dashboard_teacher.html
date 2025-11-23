@@ -62,48 +62,6 @@
 
 </main>
 
- <!-- ADD CLASS MODAL -->
-  <div id="addClassModal" class="modal">
-    <div class="modal-content">
-
-      <div class="modal-header">
-        <h3>Add Class</h3>
-        <span id="closeModal" class="close">&times;</span>
-      </div>
-
-      <div class="modal-body">
-        <form id="addClassForm" method="POST" action="{{ url_for('dashboard') }}">
-          
-          <input type="hidden" name="action" value="add_class">
-
-          <input 
-            type="text" 
-            id="class_code" 
-            name="class_code" 
-            placeholder="Enter Class Code" 
-            required
-          >
-
-          <select id="section" name="section" required>
-            <option value="">-- Select Section --</option>
-          </select>
-
-          <button type="submit" class="join-btn">Join Class</button>
-        </form>
-      </div>
-
-    </div>
-  </div>
-
-
-
-
-
-
-
-
-
-
 <script>
 const sidebar = document.getElementById("sidebar");
 const toggle = document.getElementById("menuToggle");
@@ -125,72 +83,6 @@ document.addEventListener("click", (e) => {
     sidebar.classList.remove("open");
   }
 });
-
-
-
-
-/* -----------------------------
-       MODAL
-    ------------------------------*/
-    const modal = document.getElementById("addClassModal");
-    const openModalButtons = [
-      document.getElementById("addClassBtn"),
-      document.getElementById("addClassSidebarBtn")
-    ];
-    const closeModal = document.getElementById("closeModal");
-
-    openModalButtons.forEach(btn => {
-      if (btn) btn.onclick = () => modal.style.display = "flex";
-    });
-
-    closeModal.onclick = () => modal.style.display = "none";
-
-    window.onclick = (e) => {
-      if (e.target === modal) modal.style.display = "none";
-    };
-
-
-    /* -----------------------------
-       DYNAMIC SECTION DROPDOWN
-    ------------------------------*/
-    const classInput = document.getElementById("class_code");
-    const sectionSelect = document.getElementById("section");
-
-    classInput.addEventListener("input", async () => {
-      const code = classInput.value.trim().toUpperCase();
-
-      if (!code) {
-        sectionSelect.innerHTML = `<option value="">-- Select Section --</option>`;
-        return;
-      }
-
-      sectionSelect.innerHTML = `<option value="">Loading...</option>`;
-
-      try {
-        const response = await fetch(`/get_sections/${code}`);
-        if (!response.ok) {
-          sectionSelect.innerHTML = `<option value="">No sections found</option>`;
-          return;
-        }
-
-        const data = await response.json();
-        const sections = data.sections;
-
-        if (!sections || !sections.length) {
-          sectionSelect.innerHTML = `<option value="">No sections found</option>`;
-          return;
-        }
-
-        sectionSelect.innerHTML = `<option value="">-- Select Section --</option>`;
-        sections.forEach(sec => {
-          sectionSelect.innerHTML += `<option value="${sec}">${sec}</option>`;
-        });
-
-      } catch (err) {
-        sectionSelect.innerHTML = `<option value="">Error loading</option>`;
-      }
-    });
-
 </script>
 
 </body>
