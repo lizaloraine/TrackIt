@@ -64,8 +64,26 @@
 
         <!-- Classes -->
         <div id="classes-cards" class="classes-cards">
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
+
+            {% if classes and classes|length > 0 %}
+
+                {% for c in classes %}
+                <div class="class-card"
+                     data-class-id="{{ c.class_id }}"
+                     data-class-name="{{ c.class_name }}"
+                     data-section="{{ c.section }}"
+                     data-teacher="{{ c.teacher_name }}">
+
+                    <h4>{{ c.class_name }}</h4>
+                    <p>{{ c.section }}</p>
+                    <p class="small muted">Teacher: {{ c.teacher_name }}</p>
+                </div>
+                {% endfor %}
+
+            {% else %}
+                <p class="muted no-classes">You haven't joined any classes yet.</p>
+            {% endif %}
+
         </div>
 
     </section>
@@ -93,17 +111,23 @@
 </main>
 
 <!-- JOIN CLASS MODAL -->
-<div id="modal-bg" class="modal-bg">
-    <div class="modal-box">
-        <h2>Join Class</h2>
+<div class="modal-bg" id="modal-bg">
+  <div class="modal-box">
+    <h3>Join a Class</h3>
 
-        <input id="class-code-input" placeholder="Class Code">
+    <label>Class Code</label>
+    <input type="text" id="class-code-input" placeholder="Enter class code">
 
-        <div class="btn-row">
-            <button id="cancel-join" class="btn-cancel">Cancel</button>
-            <button id="confirm-join" class="btn-join">Join</button>
-        </div>
+    <label>Select Section</label>
+    <select id="class-section-select">
+      <option value="">Select a section…</option>
+    </select>
+
+    <div class="btn-row">
+      <button id="cancel-join" class="btn-cancel">Cancel</button>
+      <button id="confirm-join" class="btn-join">Join</button>
     </div>
+  </div>
 </div>
 
 <script src="{{ url_for('static', filename='js/dashboard_student.js') }}"></script>
