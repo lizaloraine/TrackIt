@@ -4,6 +4,29 @@
   <meta charset="utf-8">
   <title>Teacher Dashboard</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher.css') }}">
+  <style>
+    /* ---------- MODAL ---------- */
+    .modal-backdrop { 
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 1200; 
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal { 
+      background: #fff; border-radius: 8px; padding: 20px; width: 360px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); 
+    }
+
+    .modal h3 { margin-top: 0; }
+    .modal .row { margin-bottom: 12px; }
+    .modal label { display:block; font-size:0.9rem; margin-bottom:4px; }
+    .modal input[type="text"] { width:100%; padding:8px; box-sizing:border-box; border-radius:6px; border:1px solid #ccc; }
+
+    .modal .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+    .btn { padding:8px 12px; cursor:pointer; border-radius:6px; border:0; font-weight:600; }
+    .btn-primary { background:#8a0000; color:#fff; }
+    .btn-primary:hover { background:#6b0000; }
+    .btn-secondary { background:#eee; }
+    .btn-secondary:hover { background:#ccc; }
+  </style>
 </head>
 <body>
 
@@ -22,67 +45,122 @@
 <!-- SIDEBAR -->
 <aside id="sidebar" class="sidebar">
   <h2 id="sidebarTitle" class="sidebar-title">TrackIt</h2>
-
   <nav class="sidebar-menu">
-  <a href="{{ url_for('dashboard') }}" class="side-link active">Home</a>
-  <a href="/dashboard/teacher/classes" class="side-link">Classes</a>
-  <a href="#" class="side-link" id="addClassSidebarBtn">Add Class</a>
-  <a href="{{ url_for('logout') }}" class="side-link">Logout</a>
-</nav>
+    <a href="{{ url_for('dashboard') }}" class="side-link">Home</a>
+    <a href="{{ url_for('dashboard_teacher_class') }}" class="side-link">Class</a>
+    <a href="#" class="side-link" id="addClassSidebarBtn">Add Class</a>
+    <a href="{{ url_for('logout') }}" class="side-link">Logout</a>
+  </nav>
 </aside>
 
 <!-- MAIN CONTENT -->
-<main class="teacher-dashboard">
+<main class="teacher-main">
 
-  <h1 class="welcome">Welcome, {{ user.name }}!</h1>
+  <!-- TEACHER CARD -->
+  <div class="teacher-profile-card">
+    <div class="teacher-avatar"></div>
+    <div class="teacher-info">
+      <div class="teacher-name">Professor {{ user.name }}</div>
+      <div class="teacher-sub">Faculty — TrackIt Attendance System</div>
+    </div>
+  </div>
 
-  <div class="card">
-    <h2 class="card-title">List of Managed Classes</h2>
+  <!-- HEADER ROW -->
+  <div class="classes-header-row">
+    <h1 class="classes-title">Managed Classes</h1>
+    <button id="addClassTopBtn" class="add-class-top-btn">Add Class</button>
+  </div>
 
-    <table class="class-table">
-  <thead>
-    <tr>
-      <th>Class Code</th>
-      <th>Section</th>
-      <th>Students</th>
-    </tr>
-  </thead>
+  <!-- CLASS GRID -->
+  <div class="class-list">
+    {% if classes|length == 0 %}
+      <p class="no-class-text">No classes assigned.</p>
+    {% endif %}
 
-  <tbody>
     {% for c in classes %}
-    <tr>
-      <td>{{ c.class_code or '' }}</td>
-      <td>{{ c.section or '' }}</td>
-      <td>{{ c.student_count or 0 }}</td>
-    </tr>
+    <div class="class-card">
+      <div class="class-left">
+        <div class="class-code">{{ c.class_code }}</div>
+        <div class="class-subject">{{ c.subject or '' }}</div>
+      </div>
+      <div class="class-middle">
+        <div class="section-label">Section:</div>
+        <div class="class-section">{{ c.section }}</div>
+      </div>
+      <div class="class-right">
+        <div class="student-count-number">{{ c.student_count or 0 }}</div>
+        <div class="student-count-label">students</div>
+      </div>
+      <div class="class-red-bar"></div>
+    </div>
     {% endfor %}
-  </tbody>
-</table>
   </div>
 
 </main>
 
+<!-- Add Class Modal -->
+<div id="addClassModalBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Add / Assign Class</h3>
+    <form id="addClassForm" action="{{ url_for('add_class_teacher') }}" method="POST">
+
+      <div class="row">
+        <label for="class_code">Class Code</label>
+        <input id="class_code" name="class_code" type="text" required maxlength="32" placeholder="e.g. MATH101">
+      </div>
+
+      <div class="row">
+        <label for="section">Section</label>
+        <input id="section" name="section" type="text" required maxlength="16" placeholder="e.g. A">
+      </div>
+
+      <div class="row">
+        <label for="subject">Subject (optional)</label>
+        <input id="subject" name="subject" type="text" maxlength="64" placeholder="Optional subject name">
+      </div>
+
+      <div class="actions">
+        <button type="button" id="cancelAddClass" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
 <script>
-const sidebar = document.getElementById("sidebar");
-const toggle = document.getElementById("menuToggle");
-const title = document.getElementById("sidebarTitle");
+  // Sidebar toggle
+  const sidebar = document.getElementById("sidebar");
+  const toggle = document.getElementById("menuToggle");
+  const title = document.getElementById("sidebarTitle");
 
-// Toggle open / close
-toggle.addEventListener("click", () => {
-  sidebar.classList.toggle("open");
-});
+  toggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+  title.addEventListener("click", () => sidebar.classList.remove("open"));
 
-// Close when clicking "TrackIt"
-title.addEventListener("click", () => {
-  sidebar.classList.remove("open");
-});
+  // Modal logic
+  const addClassSidebarBtn = document.getElementById("addClassSidebarBtn");
+  const addClassTopBtn = document.getElementById("addClassTopBtn");
+  const addClassModalBackdrop = document.getElementById("addClassModalBackdrop");
+  const cancelAddClass = document.getElementById("cancelAddClass");
 
-// Close when clicking outside sidebar
-document.addEventListener("click", (e) => {
-  if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
-    sidebar.classList.remove("open");
-  }
-});
+  const openAddClass = () => {
+    addClassModalBackdrop.classList.add("open");
+    addClassModalBackdrop.setAttribute("aria-hidden", "false");
+  };
+
+  addClassSidebarBtn.addEventListener("click", (e) => { e.preventDefault(); openAddClass(); });
+  addClassTopBtn.addEventListener("click", openAddClass);
+  cancelAddClass.addEventListener("click", () => {
+    addClassModalBackdrop.classList.remove("open");
+    addClassModalBackdrop.setAttribute("aria-hidden","true");
+  });
+
+  addClassModalBackdrop.addEventListener("click", (e) => {
+    if (e.target === addClassModalBackdrop) {
+      addClassModalBackdrop.classList.remove("open");
+      addClassModalBackdrop.setAttribute("aria-hidden","true");
+    }
+  });
 </script>
 
 </body>

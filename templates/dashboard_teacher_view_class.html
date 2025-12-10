@@ -4,104 +4,161 @@
   <meta charset="utf-8">
   <title>Teacher — View Class</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher_view_class.css') }}">
   <style>
-    /* Minimal inline styles for quick copy-paste; replace with your app CSS */
-    .attendance-controls { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
-    .student-row { display:flex; gap:12px; align-items:center; padding:6px 0; border-bottom:1px solid #eee; }
-    .btn-save { padding:8px 12px; cursor:pointer; }
+    /* ---------- GENERAL ---------- */
+    .save-btn { 
+      background:#8a0000; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; 
+    }
+    .save-btn:hover { background:#6b0000; }
+
+    /* ---------- POPUP ---------- */
+    .popup-notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #4BB543; /* green success */
+      color: white;
+      padding: 14px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 1500;
+    }
+    .popup-notification.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h2>Class: {{ class_code }} — Section: {{ section }}</h2>
 
-    <div class="attendance-controls" style="margin-top:8px;">
-      <label>
-        Date:
-        <input id="attendance-date" type="date">
-      </label>
+<!-- SIDEBAR -->
+<aside id="sidebar" class="sidebar">
+  <h2 id="sidebarTitle" class="sidebar-title">TrackIt</h2>
+  <nav class="sidebar-menu">
+    <a href="{{ url_for('dashboard') }}" class="side-link">Home</a>
+    <a href="{{ url_for('dashboard_teacher_class') }}" class="side-link">Class</a>
+    <a href="{{ url_for('dashboard_teacher_view_class', class_code=class_code, section=section) }}" class="side-link">View Class</a>
+    <a href="{{ url_for('logout') }}" class="side-link">Logout</a>
+  </nav>
+</aside>
 
-      <label>
-        Time:
-        <input id="attendance-time" type="time">
-      </label>
-
-      <button id="save-attendance-btn" class="btn-save">Save changes</button>
-    </div>
-
-    <div id="students-list">
-      {% for s in students %}
-      <div class="student-row" data-student-id="{{ s.student_id }}">
-        <div style="flex:1;">
-          <strong>{{ s.name or s.student_id }}</strong>
-        </div>
-        <div>
-          <select class="att-status">
-            <option value="present" {% if s.status == 'present' %}selected{% endif %}>Present</option>
-            <option value="absent" {% if s.status == 'absent' %}selected{% endif %}>Absent</option>
-            <option value="excused" {% if s.status == 'excused' %}selected{% endif %}>Excused</option>
-          </select>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-
-    <p><a href="{{ url_for('dashboard_teacher_classes') }}">Back to Classes</a></p>
+<!-- PAGE CONTENT -->
+<div id="content">
+<header class="header-bar">
+  <button id="toggleSidebar" class="burger-btn">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="header-right">
+    <div class="user-icon"></div>
+    <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
   </div>
+</header>
 
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const saveBtn = document.getElementById('save-attendance-btn');
-    const dateInput = document.getElementById('attendance-date');
-    const timeInput = document.getElementById('attendance-time');
+<div class="page-title">
+  Classes > {{ class_code }}
+</div>
 
-    // default date to today
-    if (!dateInput.value) {
-      const today = new Date();
-      dateInput.value = today.toISOString().slice(0,10);
-    }
-    // default time to current HH:MM
-    if (!timeInput.value) {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2,'0');
-      const mm = String(now.getMinutes()).padStart(2,'0');
-      timeInput.value = `${hh}:${mm}`;
-    }
+<div class="section-header">
+  <span>{{ section }}</span>
+  <button id="save-attendance-btn" class="save-btn">Save Attendance</button>
+</div>
 
-    saveBtn.addEventListener('click', async function() {
-      const rows = document.querySelectorAll('#students-list .student-row');
-      const attendance = Array.from(rows).map(r => {
-        return {
-          student_id: r.getAttribute('data-student-id'),
-          status: r.querySelector('.att-status').value
-        };
-      });
+<div class="white-card">
+  <h3>{{ class_code }} — {{ section }}</h3>
 
-      const payload = {
-        attendance: attendance,
-        date: dateInput.value,
-        time: timeInput.value
-      };
+  <table class="table">
+    <thead>
+      <tr>
+        <th style="width:50%;">Student Name</th>
+        <th>Present</th>
+        <th>Absent</th>
+        <th>Excused</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in students %}
+      <tr data-student-id="{{ s.student_id }}">
+        <td>{{ s.name or s.student_id }}</td>
+        <td><input type="radio" name="status_{{ s.student_id }}" value="present" {% if s.status == 'present' %}checked{% endif %}></td>
+        <td><input type="radio" name="status_{{ s.student_id }}" value="absent" {% if s.status == 'absent' %}checked{% endif %}></td>
+        <td><input type="radio" name="status_{{ s.student_id }}" value="excused" {% if s.status == 'excused' %}checked{% endif %}></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-      try {
-        const resp = await fetch('{{ url_for("save_attendance_route", class_code=class_code, section=section) }}', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(payload)
-        });
-        const data = await resp.json();
-        if (data && data.status === 'success') {
-          alert('Attendance saved. Recorded at: ' + (data.recorded_at || 'server time'));
-        } else {
-          alert('Save failed: ' + (data.message || 'unknown error'));
-        }
-      } catch (err) {
-        console.error(err);
-        alert('Error saving attendance. Check console for details.');
-      }
+  <br>
+  <a href="{{ url_for('dashboard') }}" class="back-btn">Back</a>
+</div>
+</div> 
+
+<!-- POPUP -->
+<div id="popupNotification" class="popup-notification">Attendance saved successfully!</div>
+
+<script>
+  // Sidebar toggle
+  const sidebar = document.getElementById("sidebar");
+  const toggle = document.getElementById("toggleSidebar");
+  const title = document.getElementById("sidebarTitle");
+
+  toggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+  title.addEventListener("click", () => sidebar.classList.remove("open"));
+
+  // Save Attendance function
+  async function saveAttendance() {
+    const rows = document.querySelectorAll("tbody tr");
+    const attendance = Array.from(rows).map(row => {
+      const id = row.dataset.studentId;
+      const selected = row.querySelector("input[type=radio]:checked")?.value || "absent";
+      return { student_id: id, status: selected };
     });
-  });
-  </script>
+
+    const payload = {
+      attendance,
+      timestamp: new Date().toISOString() // real-time timestamp
+    };
+
+    try {
+      const resp = await fetch(
+        "{{ url_for('save_attendance_route', class_code=class_code, section=section) }}",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const data = await resp.json();
+      if(data.status === "success") {
+        showPopup("Attendance saved successfully!");
+        console.log("Saved at " + payload.timestamp);
+      } else {
+        showPopup("Failed: " + data.message, true);
+      }
+    } catch (err) {
+      console.error(err);
+      showPopup("Error saving attendance.", true);
+    }
+  }
+
+  // Trigger save only on button click
+  document.getElementById("save-attendance-btn").addEventListener("click", saveAttendance);
+
+  // Popup function
+  const popup = document.getElementById("popupNotification");
+  function showPopup(message, isError=false) {
+    popup.textContent = message;
+    popup.style.background = isError ? "#e74c3c" : "#4BB543";
+    popup.classList.add("show");
+    setTimeout(() => popup.classList.remove("show"), 2500);
+  }
+</script>
+
 </body>
 </html>

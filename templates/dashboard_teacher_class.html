@@ -2,47 +2,137 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Teacher — Classes</title>
+  <title>Teacher — Class</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <style>
-    table { width:100%; border-collapse: collapse; margin-top:12px; }
-    th, td { padding:8px; border:1px solid #ddd; text-align:left; }
-    .actions a { margin-right:8px; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher_class.css') }}">
 </head>
+
 <body>
-  <div class="container">
+
+<!-- TOP HEADER -->
+<header class="header-bar">
+  <button id="menuToggle" class="burger-btn">
+    <span></span><span></span><span></span>
+  </button>
+
+  <div class="header-right">
+    <div class="user-icon"></div>
+    <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="sidebar">
+  <h2 id="sidebarTitle" class="sidebar-title">TrackIt</h2>
+
+  <nav class="sidebar-menu">
+    <a href="{{ url_for('dashboard') }}" class="side-link">Home</a>
+    <a href="{{ url_for('dashboard_teacher_class') }}" class="side-link">Class</a>
+
+    <!-- This now opens the SAME modal -->
+    <a href="#" class="side-link" id="openAddClassFromSidebar">Add Class</a>
+
+    <a href="{{ url_for('logout') }}" class="side-link">Logout</a>
+  </nav>
+</aside>
+
+<div class="container">
+
+  <!-- PAGE HEADER -->
+  <div class="header-row">
     <h2>My Classes</h2>
 
-    <table class="class-table">
-      <thead>
-        <tr>
-          <th>Class Code</th>
-          <th>Section</th>
-          <th>Subject</th>
-          <th>Students</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in classes %}
-        <tr>
-          <td>{{ c.class_code }}</td>
-          <td>{{ c.section }}</td>
-          <td>{{ c.subjectName }}</td>
-          <td>{{ c.student_count or 0 }}</td>
-          <td class="actions">
-            <a href="{{ url_for('dashboard_teacher_view_class', class_code=c.class_code, section=c.section) }}">View</a>
-          </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="5">You are not managing any classes yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <p><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+    <!-- This opens the SAME modal -->
+    <button id="openAddClassTop" class="add-class-btn">Add Class</button>
   </div>
+
+  <!-- CLASS LIST -->
+  <div class="class-list">
+    {% for c in classes %}
+    <a class="class-card"
+       href="{{ url_for('dashboard_teacher_view_class', class_code=c.class_code, section=c.section) }}">
+       
+      <div class="card-info">
+        <div>
+          <div class="class-code">{{ c.class_code }}</div>
+          <div class="class-subject">{{ c.subjectName }}</div>
+        </div>
+
+        <div class="class-section">
+          {{ c.class_code }} - {{ c.section }}
+        </div>
+      </div>
+
+      <div class="red-bar"></div>
+    </a>
+    {% else %}
+    <p class="no-classes-msg">You are not managing any classes yet.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Back to Dashboard -->
+  <a href="{{ url_for('dashboard') }}" class="back-dashboard-btn">Back to Dashboard</a>
+
+</div>
+
+<!-- ADD CLASS MODAL -->
+<div id="addClassModal" class="modal">
+  <div class="modal-content">
+
+    <div class="modal-header">
+      Add New Class
+      <span class="close-modal" id="closeAddClassModal">&times;</span>
+    </div>
+
+    <form method="POST" action="{{ url_for('add_class_teacher') }}">
+      <input type="hidden" name="action" value="add_class">
+
+      <label for="class_code">Class Code</label>
+      <input type="text" id="class_code" name="class_code" required maxlength="10" placeholder="e.g. MATH101">
+
+      <label for="section">Section</label>
+      <input type="text" id="section" name="section" required maxlength="5" placeholder="e.g. A">
+
+      <label for="subject">Subject Name</label>
+      <input type="text" id="subject" name="subject" placeholder="Optional subject name">
+
+      <button type="submit" class="add-class-btn">Add Class</button>
+    </form>
+
+  </div>
+</div>
+
+<!-- JS -->
+<script>
+  /* SIDEBAR TOGGLE */
+  const sidebar = document.getElementById("sidebar");
+  const toggle = document.getElementById("menuToggle");
+  const title = document.getElementById("sidebarTitle");
+
+  toggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+  title.addEventListener("click", () => sidebar.classList.remove("open"));
+
+  /* MODAL CONTROLS */
+  const modal = document.getElementById("addClassModal");
+  const openTopBtn = document.getElementById("openAddClassTop");
+  const openSidebarBtn = document.getElementById("openAddClassFromSidebar");
+  const closeModal = document.getElementById("closeAddClassModal");
+
+  const openModal = () => modal.classList.add("open");
+  const closeModalFunc = () => modal.classList.remove("open");
+
+  openTopBtn.addEventListener("click", openModal);
+  openSidebarBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    openModal();
+  });
+
+  closeModal.addEventListener("click", closeModalFunc);
+
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) closeModalFunc();
+  });
+</script>
+
 </body>
 </html>

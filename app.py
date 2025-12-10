@@ -26,7 +26,6 @@ db = firestore.client()
 # ============================================================================================
 #                                      HELPER FUNCTIONS
 # ============================================================================================
-
 def get_user_by_email(email):
     docs = list(db.collection('users').where('email', '==', email).limit(1).stream())
     return docs[0] if docs else None
@@ -297,20 +296,40 @@ def profile():
     return render_template('profile.html', user=user_data)
 
 # ============================================================================================
-# TEACHER CLASS VIEW
+# TEACHER CLASS VIEW (RENAMED TO SINGULAR PATH)
 # ============================================================================================
-@app.route('/dashboard/teacher/classes')
-def dashboard_teacher_classes():
+@app.route('/dashboard/teacher/class')
+def dashboard_teacher_class():
     if 'user' not in session or session['user']['role'] != 'teacher':
         return redirect(url_for('login'))
     user_id = session['user']['id']
     user_doc = db.collection('users').document(user_id).get()
-    # defensive: if the user document is missing, return empty list
     classes_list = []
     if user_doc.exists:
-        classes_list = user_doc.to_dict().get('classes', [])
-    # render the template on disk: dashboard_teacher_classes.html
-    return render_template('dashboard_teacher_classes.html', classes=classes_list, user=session['user'])
+        raw_classes = user_doc.to_dict().get('classes', [])
+        for entry in raw_classes:
+            class_code = entry.get('class_code')
+            section = entry.get('section')
+            class_doc = db.collection('classes').document(class_code).get()
+            if class_doc.exists:
+                cd = class_doc.to_dict()
+                subject = cd.get('subjectName', '')
+                counts = count_students_and_teachers(class_code)
+                classes_list.append({
+                    'class_code': class_code,
+                    'section': section,
+                    'subjectName': subject,
+                    'student_count': counts['student_count']
+                })
+            else:
+                classes_list.append({
+                    'class_code': class_code,
+                    'section': section,
+                    'subjectName': '',
+                    'student_count': 0
+                })
+    return render_template('dashboard_teacher_class.html', classes=classes_list, user=session['user'])
+
 
 @app.route('/dashboard/teacher/view_class/<class_code>/<section>')
 def dashboard_teacher_view_class(class_code, section):
@@ -323,7 +342,7 @@ def dashboard_teacher_view_class(class_code, section):
     class_doc = get_class_doc(class_code)
     if not class_doc.exists:
         flash("Class not found.", "danger")
-        return redirect(url_for('dashboard_teacher_classes'))
+        return redirect(url_for('dashboard_teacher_class'))
 
     class_data = class_doc.to_dict()
     subject = class_data.get('subjectName', '')
@@ -361,7 +380,7 @@ def add_class_teacher():
 
     if not class_code or not section:
         flash("Please provide class code and section.", "warning")
-        return redirect(url_for('dashboard_teacher_classes'))
+        return redirect(url_for('dashboard_teacher_class'))
 
     # If class doc exists: just add section if missing and assign teacher
     class_doc_ref = db.collection('classes').document(class_code)
@@ -388,7 +407,7 @@ def add_class_teacher():
         app.logger.exception("Error adding/assigning class")
         flash("An error occurred while adding class.", "danger")
 
-    return redirect(url_for('dashboard_teacher_classes'))
+    return redirect(url_for('dashboard_teacher_class'))
 
 # ============================================================================================
 # DASHBOARD
@@ -500,7 +519,6 @@ def dashboard():
 # ============================================================================================
 # SUPPORT / AJAX ROUTES
 # ============================================================================================
-
 @app.route('/api/class/<class_code>/sections')
 def api_get_sections(class_code):
     return jsonify({'sections': get_sections(class_code.strip().upper())})
