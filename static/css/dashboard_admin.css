@@ -1,129 +1,140 @@
-/* ---------- Dashboard Admin Styles ---------- */
+/* ---------- Dashboard Admin ---------- */
 .admin-dashboard {
-  padding: 20px;
-  background: #f7f9fc;
-  min-height: 100vh;
+    padding: 25px;
+    background: #f7f9fc;
+    min-height: 100vh;
 }
 
+/* ---------- Header ---------- */
 .admin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #004aad;
-  color: #fff;
-  padding: 15px 25px;
-  border-radius: 8px;
-  margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background: #8B0000;                   /* Unified theme color */
+    color: #fff;
+    padding: 18px 28px;
+    border-radius: 16px;                   /* Matching login box */
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    margin-bottom: 35px;
 }
 
 .admin-header h1 {
-  margin: 0;
-  font-size: 22px;
-  letter-spacing: 0.5px;
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
 }
 
+/* Logout Button (match login/signup) */
 .logout-btn {
-  color: #fff;
-  text-decoration: none;
-  background: #ff4d4d;
-  padding: 8px 14px;
-  border-radius: 5px;
-  transition: background 0.3s ease;
+    background: #a00000;
+    padding: 10px 18px;
+    border-radius: 30px;
+    font-weight: 600;
+    text-decoration: none;
+    color: white;
+    transition: 0.25s;
 }
 
 .logout-btn:hover {
-  background: #e63e3e;
+    background: #b30000;
 }
 
-/* ---------- Create Class Form ---------- */
-.create-class-section {
-  background: #fff;
-  padding: 25px 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px;
+/* ---------- Create Class Card ---------- */
+.create-class-section,
+.existing-classes {
+    background: #fff;
+    padding: 28px 32px;
+    border-radius: 16px;                   /* Match login/signup radius */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    margin-bottom: 35px;
 }
 
-.create-class-section h2 {
-  color: #004aad;
-  margin-bottom: 20px;
+.create-class-section h2,
+.existing-classes h2 {
+    color: #8B0000;                         /* Unified header color */
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
 }
 
+/* Forms */
 .create-class-form .form-group {
-  margin-bottom: 15px;
+    margin-bottom: 16px;
 }
 
 .create-class-form label {
-  font-weight: 600;
-  display: block;
-  margin-bottom: 5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: block;
 }
 
 .create-class-form input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 14px;
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #d1d1d1;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: 0.2s;
 }
 
+.create-class-form input:focus {
+    border-color: #8B0000;
+}
+
+/* Primary Button (unified with login button) */
 .btn-primary {
-  background: #004aad;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background 0.3s ease-in-out;
+    background: #8B0000;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 15px;
+    color: white;
+    cursor: pointer;
+    transition: 0.25s;
 }
 
 .btn-primary:hover {
-  background: #0062e0;
+    background: #a00000;
 }
 
-/* ---------- Existing Classes Table ---------- */
-.existing-classes {
-  background: #fff;
-  padding: 25px 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.existing-classes h2 {
-  color: #004aad;
-  margin-bottom: 20px;
-}
-
+/* ---------- Data Table ---------- */
 .class-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid #ddd;
-}
-
-.class-table th, .class-table td {
-  padding: 12px 10px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
 }
 
 .class-table th {
-  background: #004aad;
-  color: #fff;
-  font-weight: 600;
+    background: #8B0000;
+    color: #fff;
+    padding: 14px 10px;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.class-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
 }
 
 .class-table tr:hover {
-  background: #f2f6ff;
+    background: #fdf3f3;                    /* Light red tint */
 }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {
-  .admin-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .logout-btn {
-    margin-top: 10px;
-  }
+    .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .logout-btn {
+        width: 100%;
+        text-align: center;
+    }
 }

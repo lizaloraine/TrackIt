@@ -1,117 +1,107 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ class_code }} - Attendance</title>
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher_view_class.css') }}">
+  <meta charset="utf-8">
+  <title>Teacher — View Class</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* Minimal inline styles for quick copy-paste; replace with your app CSS */
+    .attendance-controls { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+    .student-row { display:flex; gap:12px; align-items:center; padding:6px 0; border-bottom:1px solid #eee; }
+    .btn-save { padding:8px 12px; cursor:pointer; }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h2>Class: {{ class_code }} — Section: {{ section }}</h2>
 
-  <!-- HEADER -->
-  <header class="header-bar">
-    <button id="menuToggle" class="burger-btn">
-      <span></span><span></span><span></span>
-    </button>
+    <div class="attendance-controls" style="margin-top:8px;">
+      <label>
+        Date:
+        <input id="attendance-date" type="date">
+      </label>
 
-    <div class="header-right">
-      <div class="user-icon"></div>
-      <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
-    </div>
-  </header>
+      <label>
+        Time:
+        <input id="attendance-time" type="time">
+      </label>
 
-  <!-- SIDEBAR -->
-  <aside id="sidebar" class="sidebar">
-    <h2 id="sidebarTitle" class="sidebar-title">TrackIt</h2>
-
-    <nav class="sidebar-menu">
-      <a href="{{ url_for('dashboard') }}" class="side-link">Home</a>
-      <a href="{{ url_for('dashboard_teacher_class') }}" class="side-link">Classes</a>
-      <a href="{{ url_for('logout') }}" class="side-link">Logout</a>
-    </nav>
-  </aside>
-
-  <!-- MAIN CONTENT -->
-  <main class="attendance-page">
-
-    <div class="page-header">
-      <h1>Classes &gt; {{ class_code }}</h1>
-      <button class="back-btn"><a href="{{ url_for('dashboard_teacher_class') }}" class="back-btn">Back</a></button>
-
+      <button id="save-attendance-btn" class="btn-save">Save changes</button>
     </div>
 
-    <div class="subject-box">
-      <div class="subject-header">
-        <h2>{{ subject_name }}</h2>
-        <button id="saveAttendanceBtn" class="save-btn">Save Changes</button>
+    <div id="students-list">
+      {% for s in students %}
+      <div class="student-row" data-student-id="{{ s.student_id }}">
+        <div style="flex:1;">
+          <strong>{{ s.name or s.student_id }}</strong>
+        </div>
+        <div>
+          <select class="att-status">
+            <option value="present" {% if s.status == 'present' %}selected{% endif %}>Present</option>
+            <option value="absent" {% if s.status == 'absent' %}selected{% endif %}>Absent</option>
+            <option value="excused" {% if s.status == 'excused' %}selected{% endif %}>Excused</option>
+          </select>
+        </div>
       </div>
-
-      <h3 class="section-title">{{ section }}</h3>
-
-      <table class="attendance-table">
-        <thead>
-          <tr>
-            <th>Student Name</th>
-            <th>Present</th>
-            <th>Absent</th>
-            <th>Excused</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for s in students %}
-          <tr data-id="{{ s.id }}">
-            <td>{{ loop.index }}. {{ s.name }}</td>
-            <td><input type="radio" name="status-{{ s.id }}" value="present" checked></td>
-            <td><input type="radio" name="status-{{ s.id }}" value="absent"></td>
-            <td><input type="radio" name="status-{{ s.id }}" value="excused"></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {% endfor %}
     </div>
-  </main>
 
-  <!-- JAVASCRIPT -->
+    <p><a href="{{ url_for('dashboard_teacher_classes') }}">Back to Classes</a></p>
+  </div>
+
   <script>
-    // Sidebar toggle
-    const sidebar = document.getElementById("sidebar");
-    const toggle = document.getElementById("menuToggle");
-    const title = document.getElementById("sidebarTitle");
+  document.addEventListener('DOMContentLoaded', function() {
+    const saveBtn = document.getElementById('save-attendance-btn');
+    const dateInput = document.getElementById('attendance-date');
+    const timeInput = document.getElementById('attendance-time');
 
-    toggle.addEventListener("click", () => sidebar.classList.toggle("open"));
-    title.addEventListener("click", () => sidebar.classList.remove("open"));
-    document.addEventListener("click", e => {
-      if (!sidebar.contains(e.target) && !toggle.contains(e.target))
-        sidebar.classList.remove("open");
-    });
+    // default date to today
+    if (!dateInput.value) {
+      const today = new Date();
+      dateInput.value = today.toISOString().slice(0,10);
+    }
+    // default time to current HH:MM
+    if (!timeInput.value) {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      timeInput.value = `${hh}:${mm}`;
+    }
 
-    // Attendance save handler
-    const saveBtn = document.getElementById("saveAttendanceBtn");
-    saveBtn.addEventListener("click", async () => {
-      const rows = document.querySelectorAll("tbody tr");
-      const attendance = [];
-
-      rows.forEach(row => {
-        const id = row.getAttribute("data-id");
-        const selected = row.querySelector("input[type=radio]:checked");
-        attendance.push({ student_id: id, status: selected.value });
+    saveBtn.addEventListener('click', async function() {
+      const rows = document.querySelectorAll('#students-list .student-row');
+      const attendance = Array.from(rows).map(r => {
+        return {
+          student_id: r.getAttribute('data-student-id'),
+          status: r.querySelector('.att-status').value
+        };
       });
 
-      const res = await fetch(`/save_attendance/{{ class_code }}/{{ section }}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attendance })
-      });
+      const payload = {
+        attendance: attendance,
+        date: dateInput.value,
+        time: timeInput.value
+      };
 
-      const data = await res.json();
-      if (data.status === "success") {
-        alert("Attendance saved successfully!");
-      } else {
-        alert("Error: " + data.message);
+      try {
+        const resp = await fetch('{{ url_for("save_attendance_route", class_code=class_code, section=section) }}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (data && data.status === 'success') {
+          alert('Attendance saved. Recorded at: ' + (data.recorded_at || 'server time'));
+        } else {
+          alert('Save failed: ' + (data.message || 'unknown error'));
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error saving attendance. Check console for details.');
       }
     });
+  });
   </script>
-
 </body>
 </html>

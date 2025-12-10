@@ -23,17 +23,15 @@ cred = credentials.Certificate(cred_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# ---------- Helpers ----------
+# ============================================================================================
+#                                      HELPER FUNCTIONS
+# ============================================================================================
+
 def get_user_by_email(email):
-    """Return a DocumentSnapshot or None"""
     docs = list(db.collection('users').where('email', '==', email).limit(1).stream())
     return docs[0] if docs else None
 
 def create_user_record(name, email, pw_hash, role, extra_id_field=None):
-    """
-    Creates a user doc.
-    'classes' is an array of maps [{'class_code': 'CSE402', 'section': 'CS-4101'}]
-    """
     data = {
         'name': name,
         'email': email,
@@ -45,15 +43,9 @@ def create_user_record(name, email, pw_hash, role, extra_id_field=None):
         data['student_id'] = extra_id_field or ''
     if role == 'teacher':
         data['teacher_id'] = extra_id_field or ''
-
     return db.collection('users').add(data)
 
-
 def create_user_record_student(name, email, pw_hash, role, extra_id_field=None, gender=None):
-    """
-    Creates a user doc.
-    'classes' is an array of maps [{'class_code': 'CSE402', 'section': 'CS-4101'}]
-    """
     data = {
         'name': name,
         'email': email,
@@ -66,35 +58,17 @@ def create_user_record_student(name, email, pw_hash, role, extra_id_field=None, 
         data['student_id'] = extra_id_field or ''
     if role == 'teacher':
         data['teacher_id'] = extra_id_field or ''
-
     return db.collection('users').add(data)
 
-
-
 def get_class_doc(class_code):
-    """Return DocumentSnapshot for a class (class_code should be uppercase)"""
     return db.collection('classes').document(class_code).get()
 
 def create_class(class_code, subject_name, sections):
-    """
-    Create a class document with sections.
-    sections: list of section strings
-    Structure:
-    {
-      "classCode": "CSE402",
-      "subjectName": "Elective 1",
-      "sections": {
-          "CS-4101": {"teacher": None, "students": [], "attendance": {}},
-          ...
-      }
-    }
-    """
     sections_map = {}
     for s in sections:
-        s_key = s.strip()
-        if not s_key:
-            continue
-        sections_map[s_key] = {"teacher": None, "students": [], "attendance": {}}
+        if s.strip():
+            sections_map[s.strip()] = {"teacher": None, "students": [], "attendance": {}}
+
     new_class = {
         "classCode": class_code,
         "subjectName": subject_name,
@@ -104,115 +78,97 @@ def create_class(class_code, subject_name, sections):
     return new_class
 
 def add_section_if_missing(class_code, section):
-    """Ensure a section exists for a class; create it if missing."""
     class_ref = db.collection('classes').document(class_code)
     doc = class_ref.get()
     if not doc.exists:
         return False
-    data = doc.to_dict()
-    sections = data.get('sections', {})
+
+    sections = doc.to_dict().get('sections', {})
     if section not in sections:
-        # create section
-        field = {f"sections.{section}": {"teacher": None, "students": [], "attendance": {}}}
-        class_ref.update(field)
+        class_ref.update({
+            f"sections.{section}": {"teacher": None, "students": [], "attendance": {}}
+        })
     return True
 
 def add_class_to_user(user_id, class_code, section):
-    """Add a class+section map to user's classes array (avoids duplicates)."""
-    user_ref = db.collection('users').document(user_id)
-    entry = {'class_code': class_code, 'section': section}
-    user_ref.update({'classes': firestore.ArrayUnion([entry])})
+    db.collection('users').document(user_id).update({
+        'classes': firestore.ArrayUnion([{'class_code': class_code, 'section': section}])
+    })
 
 def assign_teacher_to_section(teacher_id, class_code, section):
-    """Set the teacher for a specific section"""
-    class_ref = db.collection('classes').document(class_code)
-    # set sections.<section>.teacher = teacher_id
-    class_ref.update({f"sections.{section}.teacher": teacher_id})
+    db.collection('classes').document(class_code).update({
+        f"sections.{section}.teacher": teacher_id
+    })
 
 def add_student_to_section(student_id, class_code, section):
-    """Add a student id to a section's students array"""
-    class_ref = db.collection('classes').document(class_code)
-    class_ref.update({f"sections.{section}.students": firestore.ArrayUnion([student_id])})
+    db.collection('classes').document(class_code).update({
+        f"sections.{section}.students": firestore.ArrayUnion([student_id])
+    })
 
 def get_sections(class_code):
-    """Return list of section keys for a class code (uppercase)."""
     doc = get_class_doc(class_code)
-    if not doc or not doc.exists:
+    if not doc.exists:
         return []
-    d = doc.to_dict()
-    secs = list(d.get('sections', {}).keys())
-    return secs
+    return list(doc.to_dict().get('sections', {}).keys())
 
 def get_students_in_section(class_code, section):
-    """
-    Return list of student dicts [{'id': doc_id, 'name': '...'}]
-    """
     doc = get_class_doc(class_code)
-    if not doc or not doc.exists:
+    if not doc.exists:
         return []
-    d = doc.to_dict()
-    sec_map = d.get('sections', {}).get(section, {})
-    student_ids = sec_map.get('students', []) if sec_map else []
+
+    sec_data = doc.to_dict().get('sections', {}).get(section, {})
     students = []
-    for sid in student_ids:
+
+    for sid in sec_data.get('students', []):
         s_doc = db.collection('users').document(sid).get()
         if s_doc.exists:
             s_data = s_doc.to_dict()
-            students.append({'id': sid, 'name': s_data.get('name', 'Unknown')})
+            students.append({
+                'id': sid,
+                'name': s_data.get('name', 'Unknown')
+            })
+
     return students
 
 def save_attendance_to_section(class_code, section, date_str, attendance_list):
-    """
-    attendance_list = [{'student_id': ..., 'status': 'present'/'absent'/'excused'}]
-    Saves under sections.<section>.attendance.<date_str> = attendance_list
-    """
-    class_ref = db.collection('classes').document(class_code)
-    field_path = f"sections.{section}.attendance.{date_str}"
-    class_ref.update({field_path: attendance_list})
+    db.collection('classes').document(class_code).update({
+        f"sections.{section}.attendance.{date_str}": attendance_list
+    })
 
 def get_attendance_summary_for_student(user_id):
-    """
-    Walk classes the student is enrolled in (user.classes),
-    and compute present/absent/excused counts per class.
-    Returns a list of dicts:
-    [{'class_code': 'CSE402', 'subjectName': 'Elective', 'section': 'CS-4101',
-      'present': 21, 'absent': 1, 'excused': 0 }, ...]
-    """
     user_doc = db.collection('users').document(user_id).get()
     if not user_doc.exists:
         return []
-    u = user_doc.to_dict()
-    classes = u.get('classes', [])
+
+    classes = user_doc.to_dict().get('classes', [])
     results = []
+
     for entry in classes:
-        # entry expected to be a map with class_code and section
-        if isinstance(entry, dict):
-            class_code = entry.get('class_code')
-            section = entry.get('section')
-        else:
-            # backward compat (string), assume no section
-            class_code = str(entry)
-            section = None
+        class_code = entry.get('class_code')
+        section = entry.get('section')
 
         class_doc = get_class_doc(class_code)
-        if not class_doc or not class_doc.exists:
+        if not class_doc.exists:
             continue
+
         cd = class_doc.to_dict()
         subject = cd.get('subjectName', '')
+
+        attendance_map = cd.get('sections', {}).get(section, {}).get('attendance', {})
+
         present = absent = excused = 0
-        if section:
-            attendance_map = cd.get('sections', {}).get(section, {}).get('attendance', {})
-            for date_key, att_list in attendance_map.items():
-                for rec in att_list:
-                    if rec.get('student_id') != user_id:
-                        continue
-                    status = rec.get('status')
-                    if status == 'present':
-                        present += 1
-                    elif status == 'absent':
-                        absent += 1
-                    elif status == 'excused':
-                        excused += 1
+
+        for date_key, records in attendance_map.items():
+            for rec in records:
+                if rec.get('student_id') != user_id:
+                    continue
+                if rec.get('status') == 'present':
+                    present += 1
+                elif rec.get('status') == 'absent':
+                    absent += 1
+                elif rec.get('status') == 'excused':
+                    excused += 1
+
         results.append({
             'class_code': class_code,
             'subjectName': subject,
@@ -221,54 +177,56 @@ def get_attendance_summary_for_student(user_id):
             'absent': absent,
             'excused': excused
         })
+
     return results
 
 def count_students_and_teachers(class_code):
-    """
-    Return aggregate counts:
-    {'student_count': X, 'teacher_count': Y}
-    teacher_count is number of sections that have a teacher assigned.
-    """
     doc = get_class_doc(class_code)
-    if not doc or not doc.exists:
+    if not doc.exists:
         return {'student_count': 0, 'teacher_count': 0}
+
     d = doc.to_dict()
     secs = d.get('sections', {})
+
     student_count = 0
     teacher_count = 0
+
     for sec_name, sec_data in secs.items():
         student_count += len(sec_data.get('students', []))
         if sec_data.get('teacher'):
             teacher_count += 1
+
     return {'student_count': student_count, 'teacher_count': teacher_count}
 
-# ---------- Routes ----------
+# ============================================================================================
+#                                          ROUTES
+# ============================================================================================
+
 @app.route('/')
 def index():
     if 'user' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET', 'POST'])
+# ---------- LOGIN / SIGNUP ----------
+@app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
-        password = request.form.get('password', '')
+        email = request.form.get('email','').strip().lower()
+        password = request.form.get('password','')
 
-        # Admin login
         if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
-            session['user'] = {'id': 'admin', 'role': 'admin', 'name': 'Administrator'}
-            flash("Logged in as admin", "success")
+            session['user'] = {'id':'admin','role':'admin','name':'Administrator'}
             return redirect(url_for('dashboard'))
 
         doc = get_user_by_email(email)
         if not doc:
-            flash('Account not found', 'danger')
+            flash("Account not found", "danger")
             return render_template('login.html')
 
         user = doc.to_dict()
-        if not check_password_hash(user.get('password_hash', ''), password):
-            flash('Wrong password', 'danger')
+        if not check_password_hash(user.get('password_hash',''), password):
+            flash("Incorrect password", "danger")
             return render_template('login.html')
 
         session['user'] = {
@@ -277,7 +235,6 @@ def login():
             'name': user.get('name'),
             'role': user.get('role')
         }
-        flash(f"Welcome, {user.get('name')}", "success")
         return redirect(url_for('dashboard'))
 
     return render_template('login.html')
@@ -286,37 +243,34 @@ def login():
 def signup_role():
     return render_template('signup_role.html')
 
-
-@app.route('/signup_student', methods=['GET', 'POST'])
+@app.route('/signup_student', methods=['GET','POST'])
 def signup_student():
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email'].lower()
         password = request.form['password']
-        student_id = request.form.get('student_id', '')
-        gender = request.form.get('gender', '')  \
+        student_id = request.form.get('student_id','')
+        gender = request.form.get('gender','')
 
         if get_user_by_email(email):
             flash("Email already exists!", "warning")
             return redirect(url_for('signup_student'))
 
         pw_hash = generate_password_hash(password)
-
         create_user_record_student(name, email, pw_hash, 'student', student_id, gender)
 
-        flash("Account created!", "success")
+        flash("Student account created!", "success")
         return redirect(url_for('login'))
 
     return render_template('signup_student.html')
 
-
-@app.route('/signup_teacher', methods=['GET', 'POST'])
+@app.route('/signup_teacher', methods=['GET','POST'])
 def signup_teacher():
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email'].lower()
         password = request.form['password']
-        teacher_id = request.form.get('teacher_id', '')
+        teacher_id = request.form.get('teacher_id','')
 
         if get_user_by_email(email):
             flash("Email already exists!", "warning")
@@ -325,12 +279,120 @@ def signup_teacher():
         pw_hash = generate_password_hash(password)
         create_user_record(name, email, pw_hash, 'teacher', teacher_id)
 
-        flash("Account created!", "success")
+        flash("Teacher account created!", "success")
         return redirect(url_for('login'))
 
     return render_template('signup_teacher.html')
 
-    
+@app.route('/profile')
+def profile():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user']['id']
+    doc = db.collection('users').document(user_id).get()
+    if not doc.exists:
+        flash("User profile not found.", "danger")
+        return redirect(url_for('dashboard'))
+    user_data = doc.to_dict()
+    return render_template('profile.html', user=user_data)
+
+# ============================================================================================
+# TEACHER CLASS VIEW
+# ============================================================================================
+@app.route('/dashboard/teacher/classes')
+def dashboard_teacher_classes():
+    if 'user' not in session or session['user']['role'] != 'teacher':
+        return redirect(url_for('login'))
+    user_id = session['user']['id']
+    user_doc = db.collection('users').document(user_id).get()
+    # defensive: if the user document is missing, return empty list
+    classes_list = []
+    if user_doc.exists:
+        classes_list = user_doc.to_dict().get('classes', [])
+    # render the template on disk: dashboard_teacher_classes.html
+    return render_template('dashboard_teacher_classes.html', classes=classes_list, user=session['user'])
+
+@app.route('/dashboard/teacher/view_class/<class_code>/<section>')
+def dashboard_teacher_view_class(class_code, section):
+    if 'user' not in session or session['user']['role'] != 'teacher':
+        return redirect(url_for('login'))
+
+    class_code = class_code.strip().upper()
+    section = section.strip()
+
+    class_doc = get_class_doc(class_code)
+    if not class_doc.exists:
+        flash("Class not found.", "danger")
+        return redirect(url_for('dashboard_teacher_classes'))
+
+    class_data = class_doc.to_dict()
+    subject = class_data.get('subjectName', '')
+
+    raw_students = get_students_in_section(class_code, section)
+    students = []
+    for s in raw_students:
+        students.append({
+            'student_id': s.get('id',''),
+            'name': s.get('name','Unknown'),
+            'status': ''
+        })
+
+    return render_template('dashboard_teacher_view_class.html',
+                           class_code=class_code,
+                           section=section,
+                           subjectName=subject,
+                           students=students,
+                           user=session['user'])
+
+# ============================================================================================
+# New route: Add Class (from modal)
+# ============================================================================================
+@app.route('/teacher/add_class', methods=['POST'])
+def add_class_teacher():
+    # Only teachers can add/assign classes via this modal
+    if 'user' not in session or session['user']['role'] != 'teacher':
+        flash("Unauthorized", "danger")
+        return redirect(url_for('login'))
+
+    user_id = session['user']['id']
+    class_code = (request.form.get('class_code') or '').strip().upper()
+    section = (request.form.get('section') or '').strip()
+    subject = (request.form.get('subject') or '').strip()
+
+    if not class_code or not section:
+        flash("Please provide class code and section.", "warning")
+        return redirect(url_for('dashboard_teacher_classes'))
+
+    # If class doc exists: just add section if missing and assign teacher
+    class_doc_ref = db.collection('classes').document(class_code)
+    class_doc = class_doc_ref.get()
+
+    try:
+        if class_doc.exists:
+            # add section if missing
+            add_section_if_missing(class_code, section)
+            # assign teacher to the section and add to teacher's user record
+            assign_teacher_to_section(user_id, class_code, section)
+            add_class_to_user(user_id, class_code, section)
+            flash("Class assigned to you.", "success")
+        else:
+            # create new class with the given subject and section
+            # if subject missing, use class_code as fallback name
+            subj = subject if subject else class_code
+            create_class(class_code, subj, [section])
+            # assign teacher and add class to teacher user doc
+            assign_teacher_to_section(user_id, class_code, section)
+            add_class_to_user(user_id, class_code, section)
+            flash("Class created and assigned to you.", "success")
+    except Exception as e:
+        app.logger.exception("Error adding/assigning class")
+        flash("An error occurred while adding class.", "danger")
+
+    return redirect(url_for('dashboard_teacher_classes'))
+
+# ============================================================================================
+# DASHBOARD
+# ============================================================================================
 @app.route('/dashboard', methods=['GET','POST'])
 def dashboard():
     if 'user' not in session:
@@ -340,350 +402,171 @@ def dashboard():
     user_id = user['id']
     role = user['role']
 
-     # ---------- Admin ----------
+    # -------- ADMIN --------
     if role == 'admin':
         if request.method == 'POST':
-            # Admin creating a new class with sections
-            class_code = request.form.get('class_code', '').strip().upper()
-            subject = request.form.get('subjectName', '').strip()
-            sections_raw = request.form.get('sections', '')
+            class_code = request.form.get('class_code','').strip().upper()
+            subject = request.form.get('subjectName','').strip()
+            sections_raw = request.form.get('sections','')
             sections = [s.strip() for s in sections_raw.split(',') if s.strip()]
-
             if not class_code or not subject or not sections:
-                flash("Please provide class code, subject name and at least one section.", "warning")
+                flash("Fill all required fields", "warning")
                 return redirect(url_for('dashboard'))
 
-            # create class doc
             create_class(class_code, subject, sections)
-            flash("Class created with sections!", "success")
+            flash("Class created!", "success")
             return redirect(url_for('dashboard'))
 
-        # GET request: render admin dashboard
-        classes = []
+        classes_list = []
         for c in db.collection('classes').stream():
             cdict = c.to_dict()
             counts = count_students_and_teachers(c.id)
-            # attach counts for UI convenience
             cdict['student_count'] = counts['student_count']
             cdict['teacher_count'] = counts['teacher_count']
-            classes.append(cdict)
-        return render_template('dashboard_admin.html', classes=classes, user=user)
+            classes_list.append(cdict)
 
-    # ---------- Teacher ----------
+        return render_template('dashboard_admin.html', classes=classes_list, user=user)
+
+    # -------- TEACHER --------
     if role == 'teacher':
-        # fetch teacher user doc and classes list
-        user_doc_snap = db.collection('users').document(user_id).get()
-        user_doc = user_doc_snap.to_dict() if user_doc_snap.exists else {}
-        classes = user_doc.get('classes', [])  # list of maps {'class_code','section'}
+        user_doc = db.collection('users').document(user_id).get().to_dict()
+        classes_list = user_doc.get('classes', [])
 
         if request.method == 'POST':
-            # Distinguish between "add_class" (teacher assigns self to a section)
-            # and other potential actions. We expect an action field from the form.
-            action = request.form.get('action', '')
+            action = request.form.get('action','')
             if action == 'add_class':
-                class_code = request.form.get('class_code', '').strip().upper()
-                section = request.form.get('section', '').strip()
+                class_code = request.form.get('class_code','').strip().upper()
+                section = request.form.get('section','').strip()
                 if not class_code or not section:
-                    flash("Provide class code and section.", "warning")
+                    flash("Fill all fields", "warning")
                     return redirect(url_for('dashboard'))
 
                 class_doc = get_class_doc(class_code)
                 if not class_doc.exists:
-                    flash("Class code not found!", "danger")
+                    flash("Class not found!", "danger")
                     return redirect(url_for('dashboard'))
 
-                # ensure section exists (create if missing)
                 add_section_if_missing(class_code, section)
-
-                # assign teacher and add class to teacher's classes
                 assign_teacher_to_section(user_id, class_code, section)
                 add_class_to_user(user_id, class_code, section)
-                flash("Class added to your list and you are assigned as teacher for the section.", "success")
+                flash("Class assigned!", "success")
                 return redirect(url_for('dashboard'))
 
-            # fallback: treat as join class (legacy)
-            class_code = request.form.get('class_code', '').strip().upper()
-            section = request.form.get('section', '').strip()
-            if class_code:
-                class_doc = get_class_doc(class_code)
-                if not class_doc.exists:
-                    flash("Invalid class code!", "danger")
-                else:
-                    # if section provided, assign to that section; else just assign class
-                    if section:
-                        add_section_if_missing(class_code, section)
-                        assign_teacher_to_section(user_id, class_code, section)
-                        add_class_to_user(user_id, class_code, section)
-                    else:
-                        add_class_to_user(user_id, class_code, '')
-                    flash("Class joined!", "success")
-            return redirect(url_for('dashboard'))
-
-
-        # GET: prepare classes summary for teacher home
-        # Normalize classes for template: list of {'class_code','section','subjectName','student_count'}
         teacher_classes = []
-        for entry in classes:
-            if isinstance(entry, dict):
-                cc = entry.get('class_code')
-                sec = entry.get('section')
+        for entry in classes_list:
+            class_code = entry.get('class_code')
+            section = entry.get('section')
+            class_doc = get_class_doc(class_code)
+            if class_doc.exists:
+                subj = class_doc.to_dict().get('subjectName','')
+                counts = count_students_and_teachers(class_code)
             else:
-                cc = str(entry)
-                sec = ''
-    
-            # Get class document
-            class_doc = get_class_doc(cc)
-            subj = class_doc.to_dict().get('subjectName') if class_doc and class_doc.exists else ''
-    
-            # Count students in this class
-            counts = count_students_and_teachers(cc)
-    
-            # Append to teacher_classes list
+                subj = ''
+                counts = {'student_count':0}
             teacher_classes.append({
-                'class_code': cc,
-                'section': sec,
+                'class_code': class_code,
+                'section': section,
                 'subjectName': subj,
                 'student_count': counts['student_count']
             })
-
         return render_template('dashboard_teacher.html', classes=teacher_classes, user=user)
 
-    # ---------- Student ----------
+    # -------- STUDENT --------
     if role == 'student':
         user_doc = db.collection('users').document(user_id).get().to_dict()
-        classes = user_doc.get('classes', [])
-
+        classes_list = user_doc.get('classes', [])
         if request.method == 'POST':
             action = request.form.get('action','')
             if action == 'join_class':
                 class_code = request.form.get('class_code','').strip().upper()
                 section = request.form.get('section','').strip()
-
-                if not class_code or not section:
-                    flash("Provide class code and section.", "warning")
-                    return redirect(url_for('dashboard'))
-
-                class_doc = db.collection('classes').document(class_code).get()
+                class_doc = get_class_doc(class_code)
                 if not class_doc.exists:
                     flash("Class not found!", "danger")
                     return redirect(url_for('dashboard'))
-
-                # Ensure section exists
-                class_data = class_doc.to_dict()
-                sections = class_data.get('sections', {})
-                if section not in sections:
-                    flash("Section does not exist.", "danger")
+                if section not in class_doc.to_dict().get('sections', {}):
+                    flash("Section not found!", "danger")
                     return redirect(url_for('dashboard'))
-
-                # Add student
-                db.collection('classes').document(class_code).update({
-                    f"sections.{section}.students": firestore.ArrayUnion([user_id])
-                })
-
-                # Add class to student's list
-                entry = {"class_code": class_code, "section": section}
-                db.collection('users').document(user_id).update({
-                    "classes": firestore.ArrayUnion([entry])
-                })
-
+                add_student_to_section(user_id, class_code, section)
+                add_class_to_user(user_id, class_code, section)
                 flash("Joined class!", "success")
                 return redirect(url_for('dashboard'))
 
         attendance_summary = get_attendance_summary_for_student(user_id)
         return render_template('dashboard_student.html', classes=attendance_summary, user=user)
 
-    flash("Unknown role", "danger")
     return redirect(url_for('login'))
 
-# ---------- Sections endpoint ----------
-@app.route('/get_sections/<class_code>')
-def ajax_get_sections(class_code):
-    class_code = class_code.strip().upper()
-    doc = get_class_doc(class_code)
-    if not doc or not doc.exists:
-        return jsonify({'sections': []})
-
-    secs = list(doc.to_dict().get('sections',{}).keys())
-    return jsonify({'sections': secs})
-
-#------------TEACHER TEACHER--------------
-@app.route('/dashboard/teacher/classes')
-def dashboard_teacher_class():
-    if 'user' not in session or session['user']['role'] != 'teacher':
-        return redirect(url_for('login'))
-
-    user = session['user']
-    user_id = user['id']
-
-    # Fetch teacher classes
-    user_doc_snap = db.collection('users').document(user_id).get()
-    user_doc = user_doc_snap.to_dict() if user_doc_snap.exists else {}
-    classes = user_doc.get('classes', [])
-
-    teacher_classes = []
-    for entry in classes:
-        cc = entry.get('class_code') if isinstance(entry, dict) else str(entry)
-        sec = entry.get('section') if isinstance(entry, dict) else ''
-
-        class_doc = get_class_doc(cc)
-        subj = class_doc.to_dict().get('subjectName') if class_doc and class_doc.exists else ''
-
-        counts = count_students_and_teachers(cc)
-
-        teacher_classes.append({
-            'class_code': cc,
-            'section': sec,
-            'subjectName': subj,
-            'student_count': counts['student_count']
-        })
-
-    return render_template('dashboard_teacher_class.html', classes=teacher_classes, user=user)
-
-
-
-@app.route('/dashboard/teacher/class/<class_code>/<section>')
-def dashboard_teacher_view_class(class_code, section):
-    if 'user' not in session or session['user']['role'] != 'teacher':
-        return redirect(url_for('login'))
-
-    class_code = class_code.upper()
-    section = section.strip()
-
-    # Get class doc and subject
-    class_doc = get_class_doc(class_code)
-    if not class_doc or not class_doc.exists:
-        flash("Class not found", "danger")
-        return redirect(url_for('dashboard_teacher_class'))
-
-    class_data = class_doc.to_dict()
-    subject_name = class_data.get('subjectName', '')
-
-    # Get students
-    students = get_students_in_section(class_code, section)
-
-    return render_template(
-        'dashboard_teacher_view_class.html',
-        user=session['user'],
-        class_code=class_code,
-        section=section,
-        subject_name=subject_name,
-        students=students
-    )
-
-
-
-
-# ---------- AJAX endpoints ----------
+# ============================================================================================
+# SUPPORT / AJAX ROUTES
+# ============================================================================================
 
 @app.route('/api/class/<class_code>/sections')
 def api_get_sections(class_code):
-    class_code = class_code.strip().upper()
-    secs = get_sections(class_code)
-    return jsonify({'sections': secs})
-
+    return jsonify({'sections': get_sections(class_code.strip().upper())})
 
 @app.route('/get_students/<class_code>/<section>')
 def ajax_get_students(class_code, section):
-    """Return student list for a specific class section as JSON"""
-    class_code = class_code.strip().upper()
-    section = section.strip()
-    students = get_students_in_section(class_code, section)
-    return jsonify({'students': students})
-
-# Backwards-compatible endpoint if only class_code provided (returns merged student list across sections)
-@app.route('/get_students/<class_code>')
-def ajax_get_students_by_class(class_code):
-    class_code = class_code.strip().upper()
-    doc = get_class_doc(class_code)
-    if not doc or not doc.exists:
-        return jsonify({'students': []})
-    d = doc.to_dict()
-    students = []
-    sections = d.get('sections', {})
-    for sec_name, sec_data in sections.items():
-        for sid in sec_data.get('students', []):
-            s_doc = db.collection('users').document(sid).get()
-            if s_doc.exists:
-                s_data = s_doc.to_dict()
-                students.append({'id': sid, 'name': s_data.get('name', 'Unknown'), 'section': sec_name})
-    return jsonify({'students': students})
+    return jsonify({'students': get_students_in_section(class_code.strip().upper(), section.strip())})
 
 @app.route('/save_attendance/<class_code>/<section>', methods=['POST'])
 def save_attendance_route(class_code, section):
-    """
-    Receive attendance list and save under the specified class/section/date.
-    Expects JSON:
-    {
-      "date": "YYYY-MM-DD",    # optional, defaults to today if missing
-      "attendance": [{'student_id': '...', 'status': 'present'|'absent'|'excused'}, ...]
-    }
-    """
     if 'user' not in session or session['user']['role'] != 'teacher':
         return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
 
-    class_code = class_code.strip().upper()
-    section = section.strip()
-    payload = request.get_json(force=True) or {}
-    attendance_list = payload.get('attendance', [])
-    date_str = payload.get('date')
-    if not date_str:
-        date_str = datetime.now().strftime("%Y-%m-%d")
-
-    # validate class/section
-    class_doc = get_class_doc(class_code)
-    if not class_doc or not class_doc.exists:
-        return jsonify({'status': 'error', 'message': 'Class not found'}), 404
-
-    class_data = class_doc.to_dict()
-    if section not in class_data.get('sections', {}):
-        return jsonify({'status': 'error', 'message': 'Section not found'}), 404
-
-    # Save attendance
-    save_attendance_to_section(class_code, section, date_str, attendance_list)
-    return jsonify({'status': 'success', 'message': 'Attendance saved'})
-
-@app.route('/student/join_class', methods=['POST'])
-def student_join_class_ajax():
-    if 'user' not in session or session['user']['role'] != 'student':
-        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
-
-    data = request.get_json(force=True)
-    class_code = data.get('class_code', '').strip().upper()
-    section = data.get('section', '').strip()
-
-    if not class_code or not section:
-        return jsonify({'status': 'error', 'message': 'Missing class_code or section'}), 400
-
-    class_doc = db.collection('classes').document(class_code).get()
-    if not class_doc.exists:
-        return jsonify({'status': 'error', 'message': 'Class not found'}), 404
-
-    class_data = class_doc.to_dict()
-    if section not in class_data.get('sections', {}):
-        return jsonify({'status': 'error', 'message': 'Section not found'}), 404
-
-    user_id = session['user']['id']
-
-    # Add student to Firestore class
-    db.collection('classes').document(class_code).update({
-        f"sections.{section}.students": firestore.ArrayUnion([user_id])
-    })
-
-    # Add class to student's list
-    entry = {"class_code": class_code, "section": section}
-    db.collection('users').document(user_id).update({
-        "classes": firestore.ArrayUnion([entry])
-    })
-
+    data = request.get_json()
+    date_str = data.get('date') or datetime.now().strftime("%Y-%m-%d")
+    attendance = data.get('attendance', [])
+    save_attendance_to_section(class_code.strip().upper(), section.strip(), date_str, attendance)
     return jsonify({'status': 'success'})
 
+@app.route('/api/student/attendance-summary')
+def api_student_attendance_summary():
+    if 'user' not in session or session['user']['role'] != 'student':
+        return jsonify({'error': 'Unauthorized'}), 403
 
-# ---------- Logout ----------
+    user_id = session['user']['id']
+    summary = get_attendance_summary_for_student(user_id)
+    return jsonify({
+        'present': sum(item['present'] for item in summary),
+        'absent': sum(item['absent'] for item in summary),
+        'excused': sum(item['excused'] for item in summary)
+    })
+
+@app.route('/api/student/joined-classes-summary')
+def api_student_joined_classes():
+    if 'user' not in session or session['user']['role'] != 'student':
+        return jsonify([])
+    user_id = session['user']['id']
+    return jsonify(get_attendance_summary_for_student(user_id))
+
+@app.route('/api/student/class-details/<class_code>/<section>')
+def api_student_class_details(class_code, section):
+    if 'user' not in session or session['user']['role'] != 'student':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    class_doc = get_class_doc(class_code.upper())
+    if not class_doc.exists:
+        return jsonify({'error': 'Class not found'}), 404
+
+    data = class_doc.to_dict()
+    sec_data = data.get('sections', {}).get(section.strip(), {})
+    attendance_list = [{'date': k, 'records': v} for k,v in sec_data.get('attendance', {}).items()]
+    return jsonify({
+        'subjectName': data.get('subjectName'),
+        'classCode': class_code.upper(),
+        'section': section.strip(),
+        'attendance': attendance_list
+    })
+
 @app.route('/logout')
 def logout():
     session.pop('user', None)
     flash("Logged out", "info")
     return redirect(url_for('login'))
 
+# ============================================================================================
+# RUN SERVER
+# ============================================================================================
 if __name__ == '__main__':
     app.run(debug=True)

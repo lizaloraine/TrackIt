@@ -3,44 +3,59 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <title>{% block title %}TrackIt{% endblock %}</title>
 
     <!-- Global Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
-    <!-- Dashboard / Page-Specific Styles -->
+    <!-- Optional Teacher/Student Page CSS -->
+    {% if teacher_css %}
+        <link rel="stylesheet" href="{{ url_for('static', filename=teacher_css) }}">
+    {% endif %}
+
     {% block extra_css %}{% endblock %}
 </head>
 
 <body>
 
-    {% if not auth_page %}
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <h2>TrackIt</h2>
-        </div>
+{% if not auth_page %}
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-title">TrackIt</div>
 
-        <nav class="sidebar-menu">
-            <a href="/dashboard" class="menu-item">Dashboard</a>
-            <a href="/classes" class="menu-item">My Classes</a>
-            <a href="/profile" class="menu-item">Profile</a>
-        </nav>
+    <nav class="sidebar-menu">
+        <a href="#" data-target="home" class="side-link">Dashboard</a>
+        <a href="#" data-target="classes" class="side-link">My Classes</a>
+        <a href="#" data-target="profile" class="side-link">Profile</a>
+    </nav>
 
-        <button id="logoutBtn" class="logout-btn">Logout</button>
-    </aside>
-    {% endif %}
+    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+</aside>
+{% endif %}
 
-    <!-- Main Content Wrapper -->
-    <div class="main-content {% if auth_page %}auth-content{% endif %}">
-        {% block content %}{% endblock %}
-    </div>
+<!-- MAIN CONTENT WRAPPER -->
+<div class="main-content {% if auth_page %}auth-content{% endif %}">
+    {% block content %}{% endblock %}
+</div>
 
-    <!-- Global JS -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<!-- GLOBAL JS -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
-    <!-- Page-Specific JS -->
-    {% block extra_js %}{% endblock %}
+{% block extra_js %}{% endblock %}
+
+<!-- Sidebar Toggle Script -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const burger = document.querySelector(".burger-btn");
+    const sidebar = document.getElementById("sidebar");
+
+    if (burger) {
+        burger.addEventListener("click", () => {
+            sidebar.classList.toggle("open");
+        });
+    }
+});
+</script>
+
 </body>
 </html>

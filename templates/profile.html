@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% set auth_page = True %}
+
+{% block extra_css %}
+<!-- optional local CSS overrides -->
+{% endblock %}
+
+{% block content %}
+<div style="max-width:860px; margin:36px auto; padding:0 20px;">
+  <div style="background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,0.08); padding:28px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px;">
+      <h2 style="margin:0; color:#8B0000;">Profile</h2>
+      <a href="{{ url_for('dashboard') }}" style="text-decoration:none; background:#8B0000; color:#fff; padding:8px 14px; border-radius:12px; font-weight:700;">Back to Dashboard</a>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 320px; gap:20px;">
+      <div>
+        <p><strong>Name:</strong> {{ user.name }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Role:</strong> {{ user.role|capitalize }}</p>
+
+        {% if user.role == 'student' %}
+          <p><strong>Student ID:</strong> {{ user.student_id }}</p>
+          <p><strong>Gender:</strong> {{ user.gender }}</p>
+        {% endif %}
+
+        {% if user.role == 'teacher' %}
+          <p><strong>Teacher ID:</strong> {{ user.teacher_id }}</p>
+        {% endif %}
+
+        <hr style="margin:18px 0;">
+        <p><em>Account metadata</em></p>
+        <p><small>Created at: not-tracked-client-side (check Firestore)</small></p>
+      </div>
+
+      <aside style="background:#fffaf9; border-radius:12px; padding:12px; box-shadow:0 6px 18px rgba(0,0,0,0.06);">
+        <h4 style="margin:0 0 10px 0; color:#8B0000;">Quick Actions</h4>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+          <a href="{{ url_for('dashboard') }}" style="padding:10px; border-radius:10px; text-decoration:none; background:#f3f3f3; color:#222;">Dashboard</a>
+          <!-- Implement edit profile when ready -->
+          <button disabled style="padding:10px; border-radius:10px; border:none; background:#e9e9e9; color:#777; cursor:not-allowed;">Edit profile (coming soon)</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,67 +1,53 @@
 {% extends "base.html" %}
 {% set auth_page = True %}
 
-{% block navbar %}
-{% endblock %}
-
 {% block content %}
 <div class="auth-page">
 
-    <div class="split-container">
+  <div class="split-container">
 
-        <div class="left-side">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" class="logo">
-            <h1>TrackIt</h1>
-            <p>Digital Attendance at Your Fingertips.</p>
-        </div>
-
-        <div class="right-side">
-
-            <div class="login-box">
-
-                <h2>Student Attendance Record</h2>
-
-                <!-- LOGIN FORM -->
-                <form method="post" action="{{ url_for('login') }}" class="login-form">
-
-                    <!-- EMAIL -->
-                    <div class="input-group">
-                        <span class="icon">
-                            <img src="{{ url_for('static', filename='images/mail.png') }}">
-                        </span>
-                        <input type="email" id="email" name="email" placeholder="Email Address" required>
-                    </div>
-
-                    <!-- PASSWORD -->
-                    <div class="input-group">
-                        <span class="icon">
-                            <img src="{{ url_for('static', filename='images/pass.png') }}">
-                        </span>
-                        <input type="password" id="password" name="password" placeholder="Password" required>
-                    </div>
-
-                    <button type="submit" class="login-btn">Login</button>
-                </form>
-
-                <!-- LINKS -->
-                <p style="margin-top: 10px; font-size: 14px;">
-                    New to TrackIt? 
-                    <a href="{{ url_for('signup_role') }}">Sign Up</a>
-                </p>
-
-                <p style="margin-top: 5px; font-size: 14px;">
-                    <a href="#">Forgot Password?</a>
-                </p>
-
-                <p style="text-align:center; font-size:13px; color:#666; margin-top: 10px;">
-                    Admin test credentials:<br>
-                    <strong>admin@trackit.com / admin123</strong>
-                </p>
-
-            </div>
-        </div>
-
+    <div class="left-side">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" class="logo">
+      <h1>TrackIt</h1>
+      <p>Digital Attendance at Your Fingertips.</p>
     </div>
+
+    <div class="right-side">
+
+      <div class="login-box">
+
+        <h2>Student Attendance Record</h2>
+
+        <form method="post" action="{{ url_for('login') }}" class="login-form">
+          <div class="input-group">
+            <span class="icon">
+              <img src="{{ url_for('static', filename='images/mail.png') }}">
+            </span>
+            <input type="email" id="email" name="email" placeholder="Email Address" required>
+          </div>
+
+          <div class="input-group">
+            <span class="icon">
+              <img src="{{ url_for('static', filename='images/pass.png') }}">
+            </span>
+            <input type="password" id="password" name="password" placeholder="Password" required>
+          </div>
+
+          <button type="submit" class="login-btn">Login</button>
+        </form>
+
+        <p>New to TrackIt? <a href="{{ url_for('signup_role') }}">Sign Up</a></p>
+        <p><a href="#">Forgot Password?</a></p>
+
+        <p style="text-align:center; font-size:13px; color:#666;">
+          Admin test credentials:<br>
+          <strong>admin@trackit.com / admin123</strong>
+        </p>
+
+      </div>
+    </div>
+
+  </div>
 
 </div>
 {% endblock %}

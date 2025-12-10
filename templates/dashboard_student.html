@@ -1,28 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard – TrackIt</title>
+{% extends "base.html" %}
+{% set auth_page = True %}
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_student.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_student.css') }}">
+{% endblock %}
 
-<body>
-
-<!-- NAVBAR -->
+{% block content %}
 <nav class="navbar">
     <div class="nav-left">
         <strong>TrackIt</strong>
     </div>
     <div class="nav-right">
-        <a href="/profile">{{ session.user_name }}</a>
-        <a href="/logout">Logout</a>
+        <a href="{{ url_for('profile') }}">{{ user.name }}</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
     </div>
 </nav>
 
-<!-- MAIN DASHBOARD -->
 <main class="student-dashboard">
 
     <!-- LEFT COLUMN -->
@@ -66,20 +59,24 @@
         <div id="classes-cards" class="classes-cards">
 
             {% if classes and classes|length > 0 %}
-
                 {% for c in classes %}
                 <div class="class-card"
-                     data-class-id="{{ c.class_id }}"
-                     data-class-name="{{ c.class_name }}"
+                     data-class-id="{{ c.class_code }}"
+                     data-class-name="{{ c.subjectName }}"
                      data-section="{{ c.section }}"
-                     data-teacher="{{ c.teacher_name }}">
-
-                    <h4>{{ c.class_name }}</h4>
-                    <p>{{ c.section }}</p>
-                    <p class="small muted">Teacher: {{ c.teacher_name }}</p>
+                     data-teacher="{{ c.teacher_name if c.teacher_name is defined else '' }}">
+                    <div class="card-top">
+                        <div>
+                            <div class="subject">{{ c.subjectName }}</div>
+                            <div class="section">{{ c.section }}</div>
+                        </div>
+                        <div class="stat">T: {{ c.teacher_name if c.teacher_name is defined else '-' }}</div>
+                    </div>
+                    <div class="card-bottom">
+                        <p class="muted small">Click to view details</p>
+                    </div>
                 </div>
                 {% endfor %}
-
             {% else %}
                 <p class="muted no-classes">You haven't joined any classes yet.</p>
             {% endif %}
@@ -112,13 +109,13 @@
 
 <!-- JOIN CLASS MODAL -->
 <div class="modal-bg" id="modal-bg">
-  <div class="modal-box">
-    <h3>Join a Class</h3>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="join-title">
+    <h2 id="join-title">Join a Class</h2>
 
-    <label>Class Code</label>
+    <label for="class-code-input">Class Code</label>
     <input type="text" id="class-code-input" placeholder="Enter class code">
 
-    <label>Select Section</label>
+    <label for="class-section-select">Select Section</label>
     <select id="class-section-select">
       <option value="">Select a section…</option>
     </select>
@@ -129,8 +126,9 @@
     </div>
   </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='js/dashboard_student.js') }}"></script>
-
-</body>
-</html>
+{% endblock %}
