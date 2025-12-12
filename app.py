@@ -15,13 +15,25 @@ app = Flask(__name__)
 app.secret_key = APP_SECRET
 
 # ---------- Firebase Admin / Firestore init ----------
-cred_path = os.path.join(os.path.dirname(__file__), 'firebase', 'config.json')
-if not os.path.exists(cred_path):
-    raise RuntimeError('Place your Firebase service account JSON at firebase/config.json')
+import json
 
-cred = credentials.Certificate(cred_path)
-firebase_admin.initialize_app(cred)
+# ---------- Firebase Admin / Firestore init ----------
+if not firebase_admin._apps:
+    firebase_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+
+    if firebase_json:
+        cred = credentials.Certificate(json.loads(firebase_json))
+        firebase_admin.initialize_app(cred)
+    else:
+        # Local development fallback
+        cred_path = os.path.join(os.path.dirname(__file__), "firebase", "config.json")
+        if not os.path.exists(cred_path):
+            raise RuntimeError("Firebase credentials missing")
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+
 db = firestore.client()
+
 
 # ============================================================================================
 #                                      HELPER FUNCTIONS
