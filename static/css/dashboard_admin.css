@@ -127,6 +127,30 @@
     background: #fdf3f3;                    /* Light red tint */
 }
 
+
+/* ---------- Responsive Table Fix ---------- */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent table from squeezing on small screens */
+.class-table {
+    min-width: 650px;
+}
+
+/* Improve touch readability on mobile */
+@media (max-width: 768px) {
+    .class-table th,
+    .class-table td {
+        padding: 10px 8px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+}
+
+
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {
     .admin-header {
@@ -136,7 +160,7 @@
     }
 
     .logout-btn {
-        width: 100%;
+        width: 80%;
         text-align: center;
     }
 }
