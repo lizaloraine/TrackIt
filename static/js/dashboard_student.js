@@ -51,6 +51,48 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+
+
+
+    // ------------------------
+  // Sort classes (dropdown)
+  // ------------------------
+  const sortSelect = document.getElementById("sort-classes");
+
+  if (sortSelect && classesContainer) {
+    sortSelect.addEventListener("change", () => {
+      const cards = Array.from(classesContainer.querySelectorAll(".class-card"));
+      let sortedCards = [...cards];
+
+      switch (sortSelect.value) {
+
+        case "alpha":
+          sortedCards.sort((a, b) =>
+            a.dataset.className.localeCompare(b.dataset.className)
+          );
+          break;
+
+        case "most-absent":
+          sortedCards.sort((a, b) =>
+            Number(b.dataset.absent) - Number(a.dataset.absent)
+          );
+          break;
+
+        case "attendance-desc":
+          sortedCards.sort((a, b) =>
+            Number(b.dataset.attendance) - Number(a.dataset.attendance)
+          );
+          break;
+      }
+
+      // Re-render
+      classesContainer.innerHTML = "";
+      sortedCards.forEach(card => classesContainer.appendChild(card));
+    });
+  }
+
+
+
   // ------------------------
   // Auto-load sections for join modal via API
   // ------------------------
@@ -166,16 +208,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
       classesContainer.innerHTML = classes.map(c => `
         <div class="class-card"
-             data-class-id="${escapeHtml(c.class_code || c.class_id || '')}"
-             data-class-name="${escapeHtml(c.subjectName || c.class_name || '')}"
-             data-section="${escapeHtml(c.section || '')}"
-             data-teacher="${escapeHtml(c.teacher_name || '')}">
+     data-class-id="${escapeHtml(c.class_code || c.class_id || '')}"
+     data-class-name="${escapeHtml(c.subjectName || c.class_name || '')}"
+     data-section="${escapeHtml(c.section || '')}"
+     data-teacher="${escapeHtml(c.teacher_name || '')}"
+     data-absent="${c.absent || 0}"
+     data-attendance="${c.present || 0}">
           <div class="card-top">
             <div>
               <div class="subject">${escapeHtml(c.subjectName || c.class_name || '')}</div>
               <div class="section">${escapeHtml(c.section || '')}</div>
             </div>
-            <div class="stat">T: ${escapeHtml(c.teacher_name || '')}</div>
+            <div class="stat">: ${escapeHtml(c.teacher_name || '')}</div>
           </div>
           <div class="card-bottom">
             <p class="muted small">Click to view details</p>
@@ -228,6 +272,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 600);
   }
 
+
+
+
+
+  
   // ------------------------
   // Attach click handlers to class cards (ripple + fetch details)
   // ------------------------

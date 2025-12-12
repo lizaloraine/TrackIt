@@ -1,33 +1,80 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Teacher Dashboard</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher.css') }}">
+
   <style>
     /* ---------- MODAL ---------- */
-    .modal-backdrop { 
-      position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 1200; 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
     }
     .modal-backdrop.open { display: flex; }
 
-    .modal { 
-      background: #fff; border-radius: 8px; padding: 20px; width: 360px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); 
+    .modal {
+      background: #fff;
+      border-radius: 10px;
+      padding: 22px;
+      width: 360px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
     }
 
-    .modal h3 { margin-top: 0; }
-    .modal .row { margin-bottom: 12px; }
-    .modal label { display:block; font-size:0.9rem; margin-bottom:4px; }
-    .modal input[type="text"] { width:100%; padding:8px; box-sizing:border-box; border-radius:6px; border:1px solid #ccc; }
+    .modal h3 { margin-top: 0; margin-bottom: 14px; }
 
-    .modal .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
-    .btn { padding:8px 12px; cursor:pointer; border-radius:6px; border:0; font-weight:600; }
-    .btn-primary { background:#8a0000; color:#fff; }
-    .btn-primary:hover { background:#6b0000; }
-    .btn-secondary { background:#eee; }
-    .btn-secondary:hover { background:#ccc; }
+    .modal .row { margin-bottom: 14px; }
+
+    .modal label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .modal input,
+    .modal select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-family: inherit;
+    }
+
+    .modal .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 0;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: #8a0000;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #6b0000; }
+
+    .btn-secondary {
+      background: #eee;
+    }
+    .btn-secondary:hover { background: #ccc; }
   </style>
 </head>
+
 <body>
 
 <!-- TOP HEADER -->
@@ -56,7 +103,6 @@
 <!-- MAIN CONTENT -->
 <main class="teacher-main">
 
-  <!-- TEACHER CARD -->
   <div class="teacher-profile-card">
     <div class="teacher-avatar"></div>
     <div class="teacher-info">
@@ -65,71 +111,83 @@
     </div>
   </div>
 
-  <!-- HEADER ROW -->
   <div class="classes-header-row">
     <h1 class="classes-title">Managed Classes</h1>
     <button id="addClassTopBtn" class="add-class-top-btn">Add Class</button>
   </div>
 
-  <!-- CLASS GRID -->
   <div class="class-list">
     {% if classes|length == 0 %}
       <p class="no-class-text">No classes assigned.</p>
     {% endif %}
 
     {% for c in classes %}
-    <div class="class-card">
+    <a class="class-card"
+       href="{{ url_for('dashboard_teacher_view_class',
+                        class_code=c.class_code,
+                        section=c.section) }}">
+
       <div class="class-left">
         <div class="class-code">{{ c.class_code }}</div>
-        <div class="class-subject">{{ c.subject or '' }}</div>
+        <div class="class-subject">{{ c.subjectName or '' }}</div>
       </div>
+
       <div class="class-middle">
-        <div class="section-label">Section:</div>
+        <div class="section-label">Section</div>
         <div class="class-section">{{ c.section }}</div>
       </div>
+
       <div class="class-right">
         <div class="student-count-number">{{ c.student_count or 0 }}</div>
         <div class="student-count-label">students</div>
       </div>
+
       <div class="class-red-bar"></div>
-    </div>
+    </a>
     {% endfor %}
   </div>
 
 </main>
 
-<!-- Add Class Modal -->
+<!-- ADD CLASS MODAL -->
 <div id="addClassModalBackdrop" class="modal-backdrop" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true">
-    <h3>Add / Assign Class</h3>
-    <form id="addClassForm" action="{{ url_for('add_class_teacher') }}" method="POST">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addClassTitle">
+
+    <h3 id="addClassTitle">Add Class</h3>
+
+    <form method="POST" action="{{ url_for('add_class_teacher') }}" id="addClassForm">
+      <input type="hidden" name="action" value="add_class">
 
       <div class="row">
         <label for="class_code">Class Code</label>
-        <input id="class_code" name="class_code" type="text" required maxlength="32" placeholder="e.g. MATH101">
+        <input
+          type="text"
+          id="class_code"
+          name="class_code"
+          required
+          placeholder="e.g. CS101"
+          autocomplete="off"
+        >
       </div>
 
       <div class="row">
         <label for="section">Section</label>
-        <input id="section" name="section" type="text" required maxlength="16" placeholder="e.g. A">
-      </div>
-
-      <div class="row">
-        <label for="subject">Subject (optional)</label>
-        <input id="subject" name="subject" type="text" maxlength="64" placeholder="Optional subject name">
+        <select id="section" name="section" required>
+          <option value="">Select section…</option>
+        </select>
       </div>
 
       <div class="actions">
-        <button type="button" id="cancelAddClass" class="btn btn-secondary">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" id="cancelAddClass">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Class</button>
       </div>
-
     </form>
+
   </div>
 </div>
 
 <script>
-  // Sidebar toggle
+  /* ---------------- SIDEBAR ---------------- */
   const sidebar = document.getElementById("sidebar");
   const toggle = document.getElementById("menuToggle");
   const title = document.getElementById("sidebarTitle");
@@ -137,28 +195,77 @@
   toggle.addEventListener("click", () => sidebar.classList.toggle("open"));
   title.addEventListener("click", () => sidebar.classList.remove("open"));
 
-  // Modal logic
+  /* ---------------- MODAL ---------------- */
   const addClassSidebarBtn = document.getElementById("addClassSidebarBtn");
   const addClassTopBtn = document.getElementById("addClassTopBtn");
-  const addClassModalBackdrop = document.getElementById("addClassModalBackdrop");
+  const modalBackdrop = document.getElementById("addClassModalBackdrop");
   const cancelAddClass = document.getElementById("cancelAddClass");
 
-  const openAddClass = () => {
-    addClassModalBackdrop.classList.add("open");
-    addClassModalBackdrop.setAttribute("aria-hidden", "false");
+  const classInput = document.getElementById("class_code");
+  const sectionSelect = document.getElementById("section");
+
+  const resetModal = () => {
+    classInput.value = "";
+    sectionSelect.innerHTML = `<option value="">Select section…</option>`;
   };
 
-  addClassSidebarBtn.addEventListener("click", (e) => { e.preventDefault(); openAddClass(); });
-  addClassTopBtn.addEventListener("click", openAddClass);
-  cancelAddClass.addEventListener("click", () => {
-    addClassModalBackdrop.classList.remove("open");
-    addClassModalBackdrop.setAttribute("aria-hidden","true");
+  const openModal = () => {
+    modalBackdrop.classList.add("open");
+    modalBackdrop.setAttribute("aria-hidden", "false");
+    resetModal();
+    classInput.focus();
+  };
+
+  const closeModal = () => {
+    modalBackdrop.classList.remove("open");
+    modalBackdrop.setAttribute("aria-hidden", "true");
+  };
+
+  addClassSidebarBtn.addEventListener("click", e => { e.preventDefault(); openModal(); });
+  addClassTopBtn.addEventListener("click", openModal);
+  cancelAddClass.addEventListener("click", closeModal);
+
+  modalBackdrop.addEventListener("click", e => {
+    if (e.target === modalBackdrop) closeModal();
   });
 
-  addClassModalBackdrop.addEventListener("click", (e) => {
-    if (e.target === addClassModalBackdrop) {
-      addClassModalBackdrop.classList.remove("open");
-      addClassModalBackdrop.setAttribute("aria-hidden","true");
+  window.addEventListener("keydown", e => {
+    if (e.key === "Escape" && modalBackdrop.classList.contains("open")) closeModal();
+  });
+
+  /* ---------------- LOAD SECTIONS (MATCHES app.py) ---------------- */
+  let lastQuery = "";
+
+  classInput.addEventListener("input", async () => {
+    const code = classInput.value.trim().toUpperCase();
+    if (!code || code === lastQuery) return;
+    lastQuery = code;
+
+    sectionSelect.innerHTML = `<option value="">Loading…</option>`;
+
+    try {
+      const res = await fetch(`/api/class/${encodeURIComponent(code)}/sections`);
+      if (!res.ok) throw new Error();
+
+      const data = await res.json();
+      const sections = data.sections || [];
+
+      sectionSelect.innerHTML = `<option value="">Select section…</option>`;
+
+      if (!sections.length) {
+        sectionSelect.innerHTML += `<option value="">No sections found</option>`;
+        return;
+      }
+
+      sections.forEach(sec => {
+        const opt = document.createElement("option");
+        opt.value = sec;
+        opt.textContent = sec;
+        sectionSelect.appendChild(opt);
+      });
+
+    } catch {
+      sectionSelect.innerHTML = `<option value="">Error loading sections</option>`;
     }
   });
 </script>

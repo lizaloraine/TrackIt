@@ -1,4 +1,7 @@
 /* MAIN AUTH PAGE LAYOUT */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+
 .auth-page {
     width: 100%;
     height: 100vh;
@@ -13,6 +16,7 @@
 }
 
 html, body {
+    font-family: 'Poppins', sans-serif;
     overflow: hidden !important;
 }
 
@@ -106,7 +110,7 @@ html, body {
 
 .role-box h3 {
     margin: 0;
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 600;
 }
 

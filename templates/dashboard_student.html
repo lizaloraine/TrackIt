@@ -24,17 +24,7 @@
         <!-- JOIN BUTTON -->
         <button class="join-btn" id="join-class-btn">Join Class</button>
 
-        <!-- Notifications -->
-        <div class="panel notifications-panel">
-            <div class="panel-header">
-                <h3>Notifications</h3>
-                <button id="mark-read" class="action-btn">Mark all read</button>
-            </div>
-            <div id="notifications-list" class="notifications-list">
-                <div class="skeleton-item"></div>
-                <div class="skeleton-item"></div>
-            </div>
-        </div>
+     
 
         <!-- Search + Filters -->
         <div class="panel filter-panel">
@@ -70,7 +60,7 @@
                             <div class="subject">{{ c.subjectName }}</div>
                             <div class="section">{{ c.section }}</div>
                         </div>
-                        <div class="stat">T: {{ c.teacher_name if c.teacher_name is defined else '-' }}</div>
+                        <div class="stat">: {{ c.teacher_name if c.teacher_name is defined else '-' }}</div>
                     </div>
                     <div class="card-bottom">
                         <p class="muted small">Click to view details</p>

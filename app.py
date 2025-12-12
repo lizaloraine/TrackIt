@@ -190,12 +190,25 @@ def count_students_and_teachers(class_code):
     student_count = 0
     teacher_count = 0
 
+
+
     for sec_name, sec_data in secs.items():
         student_count += len(sec_data.get('students', []))
         if sec_data.get('teacher'):
             teacher_count += 1
 
     return {'student_count': student_count, 'teacher_count': teacher_count}
+
+
+
+def count_students_in_section(class_code, section):
+    doc = get_class_doc(class_code)
+    if not doc.exists:
+        return 0
+
+    sections = doc.to_dict().get('sections', {})
+    section_data = sections.get(section, {})
+    return len(section_data.get('students', []))
 
 # ============================================================================================
 #                                          ROUTES
@@ -314,12 +327,14 @@ def dashboard_teacher_class():
             if class_doc.exists:
                 cd = class_doc.to_dict()
                 subject = cd.get('subjectName', '')
-                counts = count_students_and_teachers(class_code)
+                
+                student_count = count_students_in_section(class_code, section)
+
                 classes_list.append({
                     'class_code': class_code,
                     'section': section,
                     'subjectName': subject,
-                    'student_count': counts['student_count']
+                    'student_count': student_count
                 })
             else:
                 classes_list.append({
@@ -475,19 +490,22 @@ def dashboard():
         for entry in classes_list:
             class_code = entry.get('class_code')
             section = entry.get('section')
+
             class_doc = get_class_doc(class_code)
             if class_doc.exists:
                 subj = class_doc.to_dict().get('subjectName','')
-                counts = count_students_and_teachers(class_code)
+                student_count = count_students_in_section(class_code, section)
             else:
                 subj = ''
-                counts = {'student_count':0}
+                student_count = 0
+
             teacher_classes.append({
                 'class_code': class_code,
                 'section': section,
                 'subjectName': subj,
-                'student_count': counts['student_count']
+                'student_count': student_count
             })
+
         return render_template('dashboard_teacher.html', classes=teacher_classes, user=user)
 
     # -------- STUDENT --------

@@ -83,8 +83,10 @@
     </thead>
     <tbody>
       {% for s in students %}
-      <tr data-student-id="{{ s.student_id }}">
+      <tr data-student-id="{{ s.student_id }}"
+        data-name="{{ s.name or s.student_id }}">
         <td>{{ s.name or s.student_id }}</td>
+
         <td><input type="radio" name="status_{{ s.student_id }}" value="present" {% if s.status == 'present' %}checked{% endif %}></td>
         <td><input type="radio" name="status_{{ s.student_id }}" value="absent" {% if s.status == 'absent' %}checked{% endif %}></td>
         <td><input type="radio" name="status_{{ s.student_id }}" value="excused" {% if s.status == 'excused' %}checked{% endif %}></td>
@@ -158,6 +160,36 @@
     popup.classList.add("show");
     setTimeout(() => popup.classList.remove("show"), 2500);
   }
+
+
+
+
+   document.addEventListener("DOMContentLoaded", () => {
+    const tbody = document.querySelector("tbody");
+    if (!tbody) return;
+
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+
+    rows.sort((a, b) => {
+      const nameA = (a.dataset.name || "").trim().toLowerCase();
+      const nameB = (b.dataset.name || "").trim().toLowerCase();
+
+      // get last word (surname)
+      const lastA = nameA.split(" ").pop();
+      const lastB = nameB.split(" ").pop();
+
+      // primary sort: surname
+      if (lastA !== lastB) {
+        return lastA.localeCompare(lastB);
+      }
+
+      // secondary sort: full name (fallback)
+      return nameA.localeCompare(nameB);
+    });
+
+    // re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+  });
 </script>
 
 </body>

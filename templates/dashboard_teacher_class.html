@@ -5,6 +5,84 @@
   <title>Teacher — Class</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_teacher_class.css') }}">
+
+  <!-- ===== MODAL FIX (OVERRIDES CONFLICTING CSS) ===== -->
+  <style>
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    /* IMPORTANT FIX */
+    .modal-backdrop.open .modal {
+      display: block !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: none !important;
+      z-index: 1300;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 10px;
+      padding: 22px;
+      width: 360px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .modal h3 { margin-top: 0; margin-bottom: 14px; }
+
+    .modal .row { margin-bottom: 14px; }
+
+    .modal label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .modal input,
+    .modal select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-family: inherit;
+    }
+
+    .modal .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 0;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: #8a0000;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #6b0000; }
+
+    .btn-secondary {
+      background: #eee;
+    }
+    .btn-secondary:hover { background: #ccc; }
+  </style>
 </head>
 
 <body>
@@ -24,14 +102,10 @@
 <!-- SIDEBAR -->
 <aside id="sidebar" class="sidebar">
   <h2 id="sidebarTitle" class="sidebar-title">TrackIt</h2>
-
   <nav class="sidebar-menu">
     <a href="{{ url_for('dashboard') }}" class="side-link">Home</a>
     <a href="{{ url_for('dashboard_teacher_class') }}" class="side-link">Class</a>
-
-    <!-- This now opens the SAME modal -->
-    <a href="#" class="side-link" id="openAddClassFromSidebar">Add Class</a>
-
+    <a href="#" class="side-link" id="addClassSidebarBtn">Add Class</a>
     <a href="{{ url_for('logout') }}" class="side-link">Logout</a>
   </nav>
 </aside>
@@ -41,17 +115,17 @@
   <!-- PAGE HEADER -->
   <div class="header-row">
     <h2>My Classes</h2>
-
-    <!-- This opens the SAME modal -->
-    <button id="openAddClassTop" class="add-class-btn">Add Class</button>
+    <button id="addClassTopBtn" class="add-class-btn">Add Class</button>
   </div>
 
   <!-- CLASS LIST -->
   <div class="class-list">
     {% for c in classes %}
     <a class="class-card"
-       href="{{ url_for('dashboard_teacher_view_class', class_code=c.class_code, section=c.section) }}">
-       
+       href="{{ url_for('dashboard_teacher_view_class',
+                        class_code=c.class_code,
+                        section=c.section) }}">
+
       <div class="card-info">
         <div>
           <div class="class-code">{{ c.class_code }}</div>
@@ -70,41 +144,57 @@
     {% endfor %}
   </div>
 
-  <!-- Back to Dashboard -->
-  <a href="{{ url_for('dashboard') }}" class="back-dashboard-btn">Back to Dashboard</a>
+  <a href="{{ url_for('dashboard') }}" class="back-dashboard-btn">
+    Back to Dashboard
+  </a>
 
 </div>
 
-<!-- ADD CLASS MODAL -->
-<div id="addClassModal" class="modal">
-  <div class="modal-content">
+<!-- ================= ADD CLASS MODAL ================= -->
+<div id="addClassModalBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
 
-    <div class="modal-header">
-      Add New Class
-      <span class="close-modal" id="closeAddClassModal">&times;</span>
-    </div>
+    <h3>Add Class</h3>
 
     <form method="POST" action="{{ url_for('add_class_teacher') }}">
       <input type="hidden" name="action" value="add_class">
 
-      <label for="class_code">Class Code</label>
-      <input type="text" id="class_code" name="class_code" required maxlength="10" placeholder="e.g. MATH101">
+      <div class="row">
+        <label for="class_code">Class Code</label>
+        <input
+          type="text"
+          id="class_code"
+          name="class_code"
+          required
+          maxlength="10"
+          placeholder="e.g. CS101"
+          autocomplete="off"
+        >
+      </div>
 
-      <label for="section">Section</label>
-      <input type="text" id="section" name="section" required maxlength="5" placeholder="e.g. A">
+      <div class="row">
+        <label for="section">Section</label>
+        <select id="section" name="section" required>
+          <option value="">Select section…</option>
+        </select>
+      </div>
 
-      <label for="subject">Subject Name</label>
-      <input type="text" id="subject" name="subject" placeholder="Optional subject name">
-
-      <button type="submit" class="add-class-btn">Add Class</button>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" id="cancelAddClass">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">
+          Add Class
+        </button>
+      </div>
     </form>
 
   </div>
 </div>
 
-<!-- JS -->
+<!-- ================= JS ================= -->
 <script>
-  /* SIDEBAR TOGGLE */
+  /* -------- SIDEBAR -------- */
   const sidebar = document.getElementById("sidebar");
   const toggle = document.getElementById("menuToggle");
   const title = document.getElementById("sidebarTitle");
@@ -112,25 +202,84 @@
   toggle.addEventListener("click", () => sidebar.classList.toggle("open"));
   title.addEventListener("click", () => sidebar.classList.remove("open"));
 
-  /* MODAL CONTROLS */
-  const modal = document.getElementById("addClassModal");
-  const openTopBtn = document.getElementById("openAddClassTop");
-  const openSidebarBtn = document.getElementById("openAddClassFromSidebar");
-  const closeModal = document.getElementById("closeAddClassModal");
+  /* -------- MODAL -------- */
+  const addClassSidebarBtn = document.getElementById("addClassSidebarBtn");
+  const addClassTopBtn = document.getElementById("addClassTopBtn");
+  const modalBackdrop = document.getElementById("addClassModalBackdrop");
+  const cancelAddClass = document.getElementById("cancelAddClass");
 
-  const openModal = () => modal.classList.add("open");
-  const closeModalFunc = () => modal.classList.remove("open");
+  const classInput = document.getElementById("class_code");
+  const sectionSelect = document.getElementById("section");
 
-  openTopBtn.addEventListener("click", openModal);
-  openSidebarBtn.addEventListener("click", (e) => {
+  const resetModal = () => {
+    classInput.value = "";
+    sectionSelect.innerHTML = `<option value="">Select section…</option>`;
+  };
+
+  const openModal = () => {
+    modalBackdrop.classList.add("open");
+    modalBackdrop.setAttribute("aria-hidden", "false");
+    resetModal();
+    classInput.focus();
+  };
+
+  const closeModal = () => {
+    modalBackdrop.classList.remove("open");
+    modalBackdrop.setAttribute("aria-hidden", "true");
+  };
+
+  addClassSidebarBtn.addEventListener("click", e => {
     e.preventDefault();
     openModal();
   });
 
-  closeModal.addEventListener("click", closeModalFunc);
+  addClassTopBtn.addEventListener("click", openModal);
+  cancelAddClass.addEventListener("click", closeModal);
 
-  window.addEventListener("click", (e) => {
-    if (e.target === modal) closeModalFunc();
+  modalBackdrop.addEventListener("click", e => {
+    if (e.target === modalBackdrop) closeModal();
+  });
+
+  window.addEventListener("keydown", e => {
+    if (e.key === "Escape" && modalBackdrop.classList.contains("open")) {
+      closeModal();
+    }
+  });
+
+  /* -------- LOAD SECTIONS -------- */
+  let lastQuery = "";
+
+  classInput.addEventListener("input", async () => {
+    const code = classInput.value.trim().toUpperCase();
+    if (!code || code === lastQuery) return;
+    lastQuery = code;
+
+    sectionSelect.innerHTML = `<option value="">Loading…</option>`;
+
+    try {
+      const res = await fetch(`/api/class/${encodeURIComponent(code)}/sections`);
+      if (!res.ok) throw new Error();
+
+      const data = await res.json();
+      const sections = data.sections || [];
+
+      sectionSelect.innerHTML = `<option value="">Select section…</option>`;
+
+      if (!sections.length) {
+        sectionSelect.innerHTML += `<option value="">No sections found</option>`;
+        return;
+      }
+
+      sections.forEach(sec => {
+        const opt = document.createElement("option");
+        opt.value = sec;
+        opt.textContent = sec;
+        sectionSelect.appendChild(opt);
+      });
+
+    } catch {
+      sectionSelect.innerHTML = `<option value="">Error loading sections</option>`;
+    }
   });
 </script>
 
